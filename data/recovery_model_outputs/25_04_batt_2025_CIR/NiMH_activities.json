@@ -1,0 +1,32 @@
+{
+    "name": "nicd",
+    "input": {
+      "flow_ids": ["BATT_NiMHSorted"],
+      "lca_name": "nickel-metal hybride battery waste"
+    },
+    "output_recovered_materials": [
+        {
+          "flow_ids": ["BATT_2RM_therRecNiMH", "BATT_2RM_mechRecNiMH"],
+          "material": "ferrousMetals",
+          "layer": "Layer 3",
+          "lca_name": "recovered ferrous scrap"
+        },
+        {
+          "flow_ids": ["BATT_2RM_therRecNiMH", "BATT_2RM_mechRecNiMH"],
+          "material": "Ni",
+          "layer": "Layer 4",
+          "lca_name": "recovered nickel"
+        }
+      ],
+      "output_waste_flows": [
+        {
+          "flow_id": "BATT_slagsAndSludgesNiMH_REC",
+          "lca_name": "nickel-metal hybride battery recovery slag 2"
+        },
+        {
+          "flow_id": "BATT_slagsAndSludgesNiMH",
+          "lca_name": "nickel-metal hybride battery recovery slag"
+        }
+      ]
+    
+}

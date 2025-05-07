@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run build_batt_lca.py (Always Works)",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/code/scripts/build_batt_lca.py",
+            "console": "integratedTerminal",
+            "envFile": "${workspaceFolder}/.env",
+            "cwd": "${workspaceFolder}", // Make the project root the working directory
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/code"
+            }
+        }
+    ]
+}
