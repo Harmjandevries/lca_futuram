@@ -1,30 +1,28 @@
-import pandas as pd
-from typing import List
+import bw2data as bd
+import bw2calc as bc
+import bw2io as bi
+import bw_functional
 import json
-from rm_output_reader import RMOutputReader
 
-with open(
-    "data/recovery_model_outputs/25_04_batt_2025_CIR/NiMH_activities.json", "r"
-) as file:
-    NiMH_activities = json.load(file)
+class LCIA_allocator():
+    """
+    Responsible for interacting with brightway, and allocating
+    """
+    def __init__(self):
+        with open("data/prices/prices.json", "r") as file:
+            self.prices = json.load(file)
 
+    def run_lca(self, database: bd.Database, method: str, functional_unit_trigger: str, outputs: dict):
+        total_price = sum(self.prices[metal] * amount for metal, amount in outputs.items())
+        impacts = {}
+        functional_unit = {next((act for act in database if functional_unit_trigger == act["name"].lower())): -1}
+        lca = bc.LCA(functional_unit, method)
+        lca.lci()
+        lca.lcia()
+        for metal, amount in outputs.items():
+            price_share = (self.prices[metal] * amount) / total_price
+            impacts[metal] = lca.score * price_share
 
-RMOutputReader(
-    "data/recovery_model_outputs/25_04_batt_2025_CIR/BATT_RM_cmp_version6.csv"
-).process_product(
-    input_flow_ids=NiMH_activities["input_flow_ids"],
-    output_flow_ids=NiMH_activities["output_flow_ids"],
-    output_recovered_materials=NiMH_activities["output_recovered_materials"],
-    output_waste_flows=NiMH_activities["output_waste_flows"],
-)
+        total_impact = sum(impacts.values())
 
-
-{
-    "input_flow_ids": ["BATT_NiMHSorted"],
-    "output_flow_ids": ["BATT_2RM_therRecNiMH", "BATT_2RM_mechRecNiMH"],
-    "output_recovered_materials": [
-        {"material": "ferrousMetals", "layer": "Layer 3"},
-        {"material": "Ni", "layer": "Layer 4"},
-    ],
-    "output_waste_flows": ["BATT_slagsAndSludgesNiMH_REC", "BATT_slagsAndSludgesNiMH"],
-}
+        return impacts, total_impact
