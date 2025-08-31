@@ -1,7 +1,6 @@
 .env
 .idea/
 data/
-single_plots/
 # Default ignored files
 /shelf/
 /workspace.xml
@@ -13,5 +12,4 @@ single_plots/
 .env
 .idea/
 data/
-single_plots/
 psilca
