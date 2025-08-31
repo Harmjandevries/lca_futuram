@@ -1,13 +1,19 @@
 from enum import Enum
 from dataclasses import dataclass
+from pathlib import Path
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DATA_FOLDER = PROJECT_ROOT / "data"
 
 SUPPORTED_YEARS_OBS = range(2010, 2025)
 SUPPORTED_YEARS_SCENARIO = range(2025, 2051)
-INPUT_DATA_FOLDER = "./data/input_data"
-LOADABLE_LCI_DATA_FOLDER = "./data/output_data/loadable_lcis"
-LOADABLE_LCIA_RESULTS_DATA_FOLDER = "./data/output_data/loadable_lcia_results"
-BW_FORMAT_LCIS_DATA_FOLDER = "./data/output_data/bw_format_lcis"
-ECOINVENT_NAME = "ecoinvent" 
+INPUT_DATA_FOLDER = DATA_FOLDER / "input_data"
+LOADABLE_LCI_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcis"
+LOADABLE_LCIA_RESULTS_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcia_results"
+BW_FORMAT_LCIS_DATA_FOLDER = DATA_FOLDER / "output_data/bw_format_lcis"
+PRICES_FILE = DATA_FOLDER / "prices/prices.json"
+ECOINVENT_NAME = "ecoinvent"
 BIOSPHERE_NAME = "biosphere"
 
 

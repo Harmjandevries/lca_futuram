@@ -1,12 +1,12 @@
 import pandas as pd
 from typing import List
 import json
-from helpers.constants import SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Chemistry, INPUT_DATA_FOLDER, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
+from .constants import PRICES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Chemistry, INPUT_DATA_FOLDER, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
 import bw2data as bd
 from dataclasses import dataclass
 import bw2calc as bc
-from helpers.brightway_helpers import BrightwayHelpers
-from helpers.storage_helper import StorageHelper
+from .brightway_helpers import BrightwayHelpers
+from .storage_helper import StorageHelper
 
 
 class LCABuilder:
@@ -17,7 +17,7 @@ class LCABuilder:
         # Setup BW databases
         self.ecoinvent = bd.Database("ecoinvent")
         self.biosphere = bd.Database("biosphere")
-        with open("data/prices/prices.json", "r") as file:
+        with open(PRICES_FILE, "r") as file:
             self.prices = json.load(file)
 
         self.lcis: List[SingleLCI] = []
@@ -52,12 +52,12 @@ class LCABuilder:
         database.write(big_dict)
 
     def build_lci_for_route(self, database: bd.Database, route:Route, chemistry:Chemistry, year: int, scenario:Scenario, location:Location):
-        input_folder = INPUT_DATA_FOLDER + "/" + route.value
+        input_folder = INPUT_DATA_FOLDER / route.value
 
-        mfa_df = pd.read_csv(input_folder + "/rm_output.csv").fillna("")
-        if chemistry.value in pd.ExcelFile( input_folder + "/lci_builder.xlsx").sheet_names:
+        mfa_df = pd.read_csv(input_folder / "rm_output.csv").fillna("")
+        if chemistry.value in pd.ExcelFile( input_folder / "lci_builder.xlsx").sheet_names:
             lci_builder_df = pd.read_excel(
-                input_folder + "/lci_builder.xlsx",
+                input_folder / "lci_builder.xlsx",
                 sheet_name=chemistry.value,
                 dtype={"Layer": str}
             ).fillna("")

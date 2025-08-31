@@ -13,10 +13,10 @@ if DATABASE_NAME in bd.databases:
 db = bd.Database(DATABASE_NAME)
 
 
-chemistry_selection = [Chemistry.BattNiCd,]
-route_selection = [Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.HYDRO, Route.PYRO_HYDRO, Route.PYRO_HYDRO_PRETREATMENT, Route.BATT_LeadAcidSorted, Route.BATT_ZnAlkaliSorted]
+chemistry_selection = [Chemistry.battLiNMC111,Chemistry.battLiNMC811, Chemistry.battLiFP_subsub]
+route_selection = [Route.PYRO_HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
 year_selection = [2040]
-scenario_selection = [Scenario.BAU, Scenario.CIR]
+scenario_selection = [Scenario.BAU]
 location_selection = [Location.EU27_4]
 lcia_method = ('CML v4.8 2016', 'climate change', 'global warming potential (GWP100)')
 
