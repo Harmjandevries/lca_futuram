@@ -69,7 +69,7 @@ class LCABuilder:
             (mfa_df["Scenario"] == scenario.value)
             ]
 
-        lca_dict = {}
+        lci_dict = {}
         output_amounts_alloy = {}
         output_amounts_element = {}
         
@@ -80,16 +80,23 @@ class LCABuilder:
             name=main_activity_flow_name,
             is_waste=True
         )
-        lca_dict.update(main_activity_dict)
+        lci_dict.update(main_activity_dict)
         input_flow_ids = [m.strip() for m in main_activity_row.iloc[0]['Stock/Flow IDs'].split(',')]
         product_list = [] if not main_activity_row["Materials"].iloc[0] else [m.strip() for m in main_activity_row["Materials"].iloc[0].split(',')]
         input_amount = self.get_flow_amount(mfa_df=mfa_df, flows_list=input_flow_ids, product_list=product_list, layer="")
 
+        # Build avoided impact activity
+        avoided_impacts_flow_name =  f"avoided impacts for {route_lci_names[route]} {main_activity_row['LCI Flow Name'].iloc[0]} - {year} - {scenario.value}".lower()
+        avoided_impacts_activity_id, avoided_impacts_dict = BrightwayHelpers.build_base_process(
+            name=avoided_impacts_flow_name,
+            is_waste=False
+        )
+        lci_dict.update(avoided_impacts_dict)
+
 
         # Build recovered metal activities
         output_recovered_material_rows = lci_builder_df[
-            (lci_builder_df["LCI Flow Type"]=="technosphere") &
-            (lci_builder_df["Linked process"]=="")
+            (lci_builder_df["Flow Direction"]=="recovered")
         ]
         for _, output_reco_row in output_recovered_material_rows.iterrows():
             material_list = [m.strip() for m in output_reco_row["Materials"].split(',')]
@@ -102,7 +109,7 @@ class LCABuilder:
                 process_id = existing_id
             else:
                 process_id, process_dict = BrightwayHelpers.build_base_process(process_name)
-                lca_dict.update(process_dict)
+                lci_dict.update(process_dict)
            
             total_material = self.get_flow_amount(mfa_df=mfa_df, flows_list=flows_list, product_list=product_list, material_list=material_list, layer=str(output_reco_row["Layer"]))
             technosphere_exchange = BrightwayHelpers.build_technosphere_exchange(
@@ -110,7 +117,7 @@ class LCABuilder:
                 process_id=process_id,
                 amount=-total_material / input_amount,
             )
-            lca_dict[(database.name, main_activity_id)]["exchanges"].append(
+            lci_dict[(database.name, main_activity_id)]["exchanges"].append(
                 technosphere_exchange
             )
             output_amounts_alloy[output_reco_row['LCI Flow Name']] = total_material / input_amount
@@ -123,10 +130,33 @@ class LCABuilder:
                 else:
                     output_amounts_element[material] += amount / input_amount
 
+            linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
+            linked_process_database = ExternalDatabase(linked_process_database.upper())
+
+            avoided_impact_exchange = BrightwayHelpers.build_external_exchange(
+                database=linked_process_database,
+                ecoinvent=self.ecoinvent,
+                biosphere=self.biosphere,
+                process_name=linked_process_name,
+                location=output_reco_row["Region"] if output_reco_row["Region"] else "RER",
+                amount=total_material / input_amount,
+                flow_direction="output",
+                categories=tuple(map(str.strip, output_reco_row["Categories"].split(", "))),
+                unit = output_reco_row["Unit"],
+            )
+            # If this exchange exists already, add it
+            # Check if exchange with same name and input already exists
+            exchanges = lci_dict[(database.name, avoided_impacts_activity_id)]["exchanges"]
+            for ex in exchanges:
+                if ex["name"] == avoided_impact_exchange["name"] and ex["input"] == avoided_impact_exchange["input"]:
+                    ex["amount"] += avoided_impact_exchange["amount"]
+                    break
+            else:
+                exchanges.append(avoided_impact_exchange)
 
         # Build external activities from external sources
-        additional_activity_rows = lci_builder_df[lci_builder_df['Linked process']!='']
-        for _, output_reco_row in additional_activity_rows.iterrows():
+        external_activity_rows = lci_builder_df[(lci_builder_df['Linked process']!='')&(lci_builder_df['Flow Direction']!="recovered")]
+        for _, output_reco_row in external_activity_rows.iterrows():
             # Scale the ecoinvent processes by the flow they are matched to in ecoinvent
             if output_reco_row['Stock/Flow IDs']:
                 total_flow = self.get_flow_amount(
@@ -166,7 +196,7 @@ class LCABuilder:
             )
             # If this exchange exists already, add it
             # Check if exchange with same name and input already exists
-            exchanges = lca_dict[(database.name, main_activity_id)]["exchanges"]
+            exchanges = lci_dict[(database.name, main_activity_id)]["exchanges"]
             for ex in exchanges:
                 if ex["name"] == external_exchange["name"] and ex["input"] == external_exchange["input"]:
                     ex["amount"] += external_exchange["amount"]
@@ -175,13 +205,14 @@ class LCABuilder:
                 exchanges.append(external_exchange)
 
         return SingleLCI(
-            main_activity_flow_name=main_activity_flow_name, 
+            main_activity_flow_name=main_activity_flow_name,
+            avoided_impacts_flow_name=avoided_impacts_flow_name,
             chemistry=chemistry, 
             route=route, 
             scenario=scenario,
             year=year,
             location=location,
-            lci_dict=lca_dict,
+            lci_dict=lci_dict,
             total_inflow_amount=input_amount,
             output_amounts_alloy=output_amounts_alloy,
             output_amounts_element=output_amounts_element)
@@ -243,26 +274,19 @@ class LCABuilder:
             self.lcia_results.append(lcia_result)
 
     def run_lcia_for_route(self, database: bd.Database, lcia_method: tuple, lci: SingleLCI):
-        total_price_alloys = sum(self.prices[metal.lower()] * amount for metal, amount in lci.output_amounts_alloy.items())
-        impacts = []
-        total_impact = 0
         functional_unit = {next((act for act in database if lci.main_activity_flow_name == act["name"].lower())): -1}
         lca = bc.LCA(functional_unit, lcia_method)
         lca.lci()
         lca.lcia()
+        total_impact = lca.score
 
-        for alloy, amount in lci.output_amounts_alloy.items():
-            price_share = (self.prices[alloy.lower()] * amount) / total_price_alloys
-            impacts.append({
-                "material": alloy.lower(),
-                "amount": amount,
-                "impacts": lca.score * price_share
-            })
-            total_impact += lca.score * price_share
+        functional_unit_avoided_impact = {next((act for act in database if lci.avoided_impacts_flow_name == act["name"].lower())): -1}
+        lca = bc.LCA(functional_unit_avoided_impact, lcia_method)
+        lca.lci()
+        lca.lcia()
+        avoided_impact = lca.score
 
-        sorted_impacts = sorted(impacts, key=lambda x: x["impacts"], reverse=True)
-
-        return SingleLCIAResult(impact_per_alloy=sorted_impacts, total_impact=total_impact, lci=lci)
+        return SingleLCIAResult(total_impact=total_impact, avoided_impact=avoided_impact, lci=lci)
     
     def save_lcis(self):
         StorageHelper.save_lcis(self.lcis)

@@ -13,8 +13,8 @@ if DATABASE_NAME in bd.databases:
 db = bd.Database(DATABASE_NAME)
 
 
-chemistry_selection = [Chemistry.battLiNMC111,Chemistry.battLiNMC811, Chemistry.battLiFP_subsub]
-route_selection = [Route.PYRO_HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
+chemistry_selection = [Chemistry.battLiNMC111, Chemistry.battLiNMC811, Chemistry.battLiFP_subsub]
+route_selection = [Route.PYRO_HYDRO]
 year_selection = [2040]
 scenario_selection = [Scenario.BAU]
 location_selection = [Location.EU27_4]

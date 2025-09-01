@@ -69,16 +69,17 @@ class SingleLCI:
     location: Location
     year:int
     
-    lci_dict: dict
-    main_activity_flow_name: str
-    total_inflow_amount: int
-    output_amounts_alloy: dict
-    output_amounts_element: dict
+    lci_dict: dict # lci for the impacts of the recycling process
+    main_activity_flow_name: str # name of the recycled material inflow to the lci_dict
+    avoided_impacts_flow_name: str # LCI name of the recovered materials process
+    total_inflow_amount: int #total amount of recycled material, (we need to multiply the impacts with this, to get total impact)
+    output_amounts_alloy: dict # amount of each alloy
+    output_amounts_element: dict # amount of each element
 
 @dataclass
 class SingleLCIAResult:
     """Class that holds all information for an LCIA"""
-    total_impact: int # impact of 1kg of recycling
-    impact_per_alloy: dict
+    total_impact: float # impact of 1kg of recycling
+    avoided_impact: float
     lci: SingleLCI
     # impact_per_element: dict
