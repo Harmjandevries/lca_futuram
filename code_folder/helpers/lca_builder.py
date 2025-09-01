@@ -85,6 +85,10 @@ class LCABuilder:
         product_list = [] if not main_activity_row["Materials"].iloc[0] else [m.strip() for m in main_activity_row["Materials"].iloc[0].split(',')]
         input_amount = self.get_flow_amount(mfa_df=mfa_df, flows_list=input_flow_ids, product_list=product_list, layer="")
 
+        if input_amount==0:
+            print("This should never be 0")
+            exit(0)
+
         # Build avoided impact activity
         avoided_impacts_flow_name =  f"avoided impacts for {route_lci_names[route]} {main_activity_row['LCI Flow Name'].iloc[0]} - {year} - {scenario.value}".lower()
         avoided_impacts_activity_id, avoided_impacts_dict = BrightwayHelpers.build_base_process(
