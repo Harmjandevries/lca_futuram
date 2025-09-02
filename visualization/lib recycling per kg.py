@@ -16,7 +16,7 @@ lca_builder.load_latest_lcia_results()
 lcia_results = lca_builder.lcia_results
 
 # ---- Select only desired chemistries, routes, year, scenario ----
-desired_chemistries = [Chemistry.battLiNMC111, Chemistry.battLiNMC811, Chemistry.battLiFP_subsub, Chemistry.BattZn, Chemistry.BattPb, Chemistry.BattNiCd, Chemistry.BattNiMH]
+desired_chemistries = [Chemistry.battLiNMC111, Chemistry.battLiNMC811, Chemistry.battLiFP_subsub, Chemistry.battLiNCA_subsub, Chemistry.BattZn, Chemistry.BattPb, Chemistry.BattNiCd, Chemistry.BattNiMH]
 desired_routes = [Route.HYDRO, Route.PYRO_HYDRO, Route.PYRO_HYDRO_PRETREATMENT, Route.BATT_ZnAlkaliSorted, Route.BATT_LeadAcidSorted, Route.BATT_NiMHSorted, Route.BATT_NiCdSorted]
 selected_year = 2030
 selected_scenario = Scenario.BAU

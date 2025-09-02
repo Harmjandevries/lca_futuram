@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import bw2data as bd
-from helpers.constants import Chemistry
+from code_folder.helpers.constants import Chemistry
 
-from helpers.lca_builder import LCABuilder
+from code_folder.helpers.lca_builder import LCABuilder
 
 PROJECT_NAME = "nonbrokenproject"
 DATABASE_NAME = "batt_lci"

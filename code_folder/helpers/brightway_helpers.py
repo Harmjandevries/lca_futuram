@@ -1,7 +1,7 @@
 from typing import Optional, List
-from helpers.constants import SingleLCI
+from .constants import SingleLCI
 import uuid
-from helpers.constants import ExternalDatabase
+from .constants import ExternalDatabase
 import bw2data as bd
 
 class BrightwayHelpers:

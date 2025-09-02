@@ -49,6 +49,8 @@ class Chemistry(Enum):
     battLiNMC111="battLiNMC111"
     battLiNMC811="battLiNMC811"
     battLiFP_subsub="battLiFP_subsub"
+    battLiNCA_subsub="battLiNCA_subsub"
+
 
 route_lci_names = {
     Route.PYRO_HYDRO: "Pyrometallurgical+Hydrometallurgical recycling of ",
