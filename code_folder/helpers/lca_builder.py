@@ -1,9 +1,8 @@
 import pandas as pd
-from typing import List
+from typing import Dict, List
 import json
 from .constants import PRICES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Chemistry, INPUT_DATA_FOLDER, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
 import bw2data as bd
-from dataclasses import dataclass
 import bw2calc as bc
 from .brightway_helpers import BrightwayHelpers
 from .storage_helper import StorageHelper
@@ -22,6 +21,8 @@ class LCABuilder:
 
         self.lcis: List[SingleLCI] = []
         self.lcia_results: List[SingleLCIAResult] = []
+        # Index of process names to IDs for O(1) lookups
+        self.process_name_to_id: Dict[str, str] = {}
 
     def build_all_lcis(self,
                   database: bd.Database,
@@ -81,6 +82,7 @@ class LCABuilder:
             is_waste=True
         )
         lci_dict.update(main_activity_dict)
+        self.process_name_to_id[main_activity_flow_name] = main_activity_id
         input_flow_ids = [m.strip() for m in main_activity_row.iloc[0]['Stock/Flow IDs'].split(',')]
         product_list = [] if not main_activity_row["Materials"].iloc[0] else [m.strip() for m in main_activity_row["Materials"].iloc[0].split(',')]
         input_amount = self.get_flow_amount(mfa_df=mfa_df, flows_list=input_flow_ids, product_list=product_list, layer="")
@@ -96,25 +98,33 @@ class LCABuilder:
             is_waste=False
         )
         lci_dict.update(avoided_impacts_dict)
+        self.process_name_to_id[avoided_impacts_flow_name] = avoided_impacts_activity_id
 
 
         # Build recovered metal activities
-        output_recovered_material_rows = lci_builder_df[
-            (lci_builder_df["Flow Direction"]=="recovered")
-        ]
-        for _, output_reco_row in output_recovered_material_rows.iterrows():
-            material_list = [m.strip() for m in output_reco_row["Materials"].split(',')]
-            flows_list = [m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',')]
+        output_recovered_material_rows = (
+            lci_builder_df[lci_builder_df["Flow Direction"] == "recovered"]
+            .assign(
+                material_list=lambda df: df["Materials"].str.split(',').apply(lambda x: [m.strip() for m in x]),
+                flows_list=lambda df: df["Stock/Flow IDs"].str.split(',').apply(lambda x: [m.strip() for m in x]),
+                categories_list=lambda df: df["Categories"].str.split(', ').apply(lambda x: [m.strip() for m in x]),
+            )
+            .to_dict("records")
+        )
+        for output_reco_row in output_recovered_material_rows:
+            material_list = output_reco_row["material_list"]
+            flows_list = output_reco_row["flows_list"]
 
             process_name = output_reco_row['LCI Flow Name']
-            existing_id = BrightwayHelpers.get_existing_process_id_by_name(lcis=self.lcis, name=process_name)
+            existing_id = self.process_name_to_id.get(process_name.lower())
 
             if existing_id:
                 process_id = existing_id
             else:
                 process_id, process_dict = BrightwayHelpers.build_base_process(process_name)
                 lci_dict.update(process_dict)
-           
+                self.process_name_to_id[process_name.lower()] = process_id
+
             total_material = self.get_flow_amount(mfa_df=mfa_df, flows_list=flows_list, product_list=product_list, material_list=material_list, layer=str(output_reco_row["Layer"]))
             technosphere_exchange = BrightwayHelpers.build_technosphere_exchange(
                 name=output_reco_row["LCI Flow Name"],
@@ -125,14 +135,10 @@ class LCABuilder:
                 technosphere_exchange
             )
             output_amounts_alloy[output_reco_row['LCI Flow Name']] = total_material / input_amount
-            for i in range(0, len(material_list)):
-                material = material_list[i]
-                layer = output_reco_row["Layer"].split(",")[i] if "," in output_reco_row["Layer"] else output_reco_row["Layer"]
-                amount = self.get_flow_amount(mfa_df=mfa_df, flows_list=flows_list, product_list=product_list, material_list=[material],layer=layer)
-                if material not in output_amounts_element:
-                    output_amounts_element[material] = amount / input_amount
-                else:
-                    output_amounts_element[material] += amount / input_amount
+            layers = output_reco_row["Layer"].split(",") if "," in output_reco_row["Layer"] else [output_reco_row["Layer"]] * len(material_list)
+            for material, layer in zip(material_list, layers):
+                amount = self.get_flow_amount(mfa_df=mfa_df, flows_list=flows_list, product_list=product_list, material_list=[material], layer=layer)
+                output_amounts_element[material] = output_amounts_element.get(material, 0) + amount / input_amount
 
             linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
@@ -145,11 +151,9 @@ class LCABuilder:
                 location=output_reco_row["Region"] if output_reco_row["Region"] else "RER",
                 amount=total_material / input_amount,
                 flow_direction="output",
-                categories=tuple(map(str.strip, output_reco_row["Categories"].split(", "))),
+                categories=tuple(output_reco_row["categories_list"]),
                 unit = output_reco_row["Unit"],
             )
-            # If this exchange exists already, add it
-            # Check if exchange with same name and input already exists
             exchanges = lci_dict[(database.name, avoided_impacts_activity_id)]["exchanges"]
             for ex in exchanges:
                 if ex["name"] == avoided_impact_exchange["name"] and ex["input"] == avoided_impact_exchange["input"]:
@@ -159,30 +163,33 @@ class LCABuilder:
                 exchanges.append(avoided_impact_exchange)
 
         # Build external activities from external sources
-        external_activity_rows = lci_builder_df[(lci_builder_df['Linked process']!='')&(lci_builder_df['Flow Direction']!="recovered")]
-        for _, output_reco_row in external_activity_rows.iterrows():
-            # Scale the ecoinvent processes by the flow they are matched to in ecoinvent
+        external_activity_rows = (
+            lci_builder_df[(lci_builder_df['Linked process']!='') & (lci_builder_df['Flow Direction']!="recovered")]
+            .assign(
+                materials_list=lambda df: df['Materials'].str.split(',').apply(lambda x: [m.strip() for m in x]),
+                flows_list=lambda df: df['Stock/Flow IDs'].str.split(',').apply(lambda x: [m.strip() for m in x]),
+                scaled_by_flows_list=lambda df: df['Scaled by flows'].fillna('').str.split(',').apply(lambda x: [m.strip() for m in x if m.strip()]),
+                categories_list=lambda df: df['Categories'].str.split(', ').apply(lambda x: [m.strip() for m in x]),
+            )
+            .to_dict('records')
+        )
+        for output_reco_row in external_activity_rows:
             if output_reco_row['Stock/Flow IDs']:
                 total_flow = self.get_flow_amount(
                     mfa_df=mfa_df,
                     product_list=product_list,
-                    material_list=[m.strip() for m in output_reco_row["Materials"].split(',')],
-                    flows_list=[m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',')],
+                    material_list=output_reco_row['materials_list'],
+                    flows_list=output_reco_row['flows_list'],
                     layer=str(output_reco_row['Layer']))
-                amount = total_flow/input_amount
-            elif output_reco_row["Scaled by flows"]:
-                scaled_by_flows = [m.strip() for m in output_reco_row["Scaled by flows"].split(',')]
+                amount = total_flow / input_amount
+            elif output_reco_row['Scaled by flows']:
                 scaling_ratio = self.get_flow_amount(
                     mfa_df=mfa_df,
-                    flows_list=scaled_by_flows,
+                    flows_list=output_reco_row['scaled_by_flows_list'],
                     product_list=product_list,
-                    # Todo bug?
-                    )/input_amount
-                if "Element to compound ratio" in output_reco_row:
-                    element_to_compound_ratio = float(output_reco_row["Element to compound ratio"])
-                else:
-                    element_to_compound_ratio = 1
-                amount = output_reco_row['Amount']*scaling_ratio / element_to_compound_ratio
+                ) / input_amount
+                element_to_compound_ratio = float(output_reco_row.get('Element to compound ratio', 1))
+                amount = output_reco_row['Amount'] * scaling_ratio / element_to_compound_ratio
             else:
                 amount = output_reco_row['Amount']
             linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
@@ -191,15 +198,13 @@ class LCABuilder:
                 database=linked_process_database,
                 ecoinvent=self.ecoinvent,
                 biosphere=self.biosphere,
-                process_name = linked_process_name,
+                process_name=linked_process_name,
                 location=output_reco_row["Region"] if output_reco_row["Region"] else "RER",
                 amount=amount,
                 unit=output_reco_row["Unit"],
                 flow_direction=output_reco_row["Flow Direction"],
-                categories=tuple(map(str.strip, output_reco_row["Categories"].split(", ")))
+                categories=tuple(output_reco_row['categories_list'])
             )
-            # If this exchange exists already, add it
-            # Check if exchange with same name and input already exists
             exchanges = lci_dict[(database.name, main_activity_id)]["exchanges"]
             for ex in exchanges:
                 if ex["name"] == external_exchange["name"] and ex["input"] == external_exchange["input"]:
@@ -299,6 +304,12 @@ class LCABuilder:
         self.lcis = StorageHelper.load_latest_lcis()
         big_dict = {k: v for lci in self.lcis for k, v in lci.lci_dict.items()}
         database.write(big_dict)
+        # Rebuild process name index
+        self.process_name_to_id = {
+            data["name"].strip().lower(): pid
+            for lci in self.lcis
+            for (db_name, pid), data in lci.lci_dict.items()
+        }
 
     def save_database_to_excel(self, database: bd.Database):
         StorageHelper.save_database_to_excel(database)
