@@ -1,23 +1,15 @@
-from typing import Optional, List
-from .constants import SingleLCI
+from typing import Dict, Optional
 import uuid
 from .constants import ExternalDatabase
 import bw2data as bd
 
 class BrightwayHelpers:
     @staticmethod
-    def get_existing_process_id_by_name(lcis: List[SingleLCI], name: str) -> Optional[str]:
+    def get_existing_process_id_by_name(name_index: Dict[str, str], name: str) -> Optional[str]:
         """
-        Checks if a process with the given name exists in any of the lci_dicts in lcis.
-        Returns its process ID (code) if found, else None.
+        Look up a process ID by name using a pre-built index.
         """
-        normalized_name = name.strip().lower()
-
-        for lci in lcis:
-            for (db_name, process_id), process_data in lci.lci_dict.items():
-                if process_data["name"].strip().lower() == normalized_name:
-                    return process_id  # This is the UUID you want
-        return None
+        return name_index.get(name.strip().lower())
     
     @staticmethod
     def build_technosphere_exchange(name: str, process_id: str, amount: float):
