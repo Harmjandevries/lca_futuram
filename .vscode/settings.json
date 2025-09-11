@@ -1,7 +1,0 @@
-{
-    "python.analysis.extraPaths": ["./code"],
-    "python.testing.autoTestDiscoverOnSaveEnabled": false,
-    "python.terminal.activateEnvironment": true,
-    "python.envFile": "${workspaceFolder}/.env",
-    "python.defaultInterpreterPath": "${workspaceFolder}/.env"
-}
