@@ -1,7 +1,7 @@
 from typing import Optional, List
 from .constants import SingleLCI
 import uuid
-from .constants import ExternalDatabase
+from .constants import ExternalDatabase, DATABASE_NAME
 import bw2data as bd
 
 class BrightwayHelpers:
@@ -22,7 +22,7 @@ class BrightwayHelpers:
     @staticmethod
     def build_technosphere_exchange(name: str, process_id: str, amount: float):
         return {
-            "input": ("batt_lci", process_id),
+            "input": (DATABASE_NAME, process_id),
             "name": name,
             "amount": amount,
             "unit": "kilogram",
@@ -34,14 +34,14 @@ class BrightwayHelpers:
     def build_base_process(name: str, is_waste: Optional[bool] = False):
         process_id = str(uuid.uuid4())
         return process_id, {
-            ("batt_lci", process_id): {
+            (DATABASE_NAME, process_id): {
                 "name": name,
                 "unit": "kilogram",
                 "location": "RER",
                 "reference product": name,
                 "exchanges": [
                     {
-                        "input": ("batt_lci", process_id),
+                        "input": (DATABASE_NAME, process_id),
                         "name": name,
                         "amount": 1 if not is_waste else -1,
                         "unit": "kilogram",

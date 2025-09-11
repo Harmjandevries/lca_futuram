@@ -10,7 +10,9 @@ This repository builds life cycle inventories (LCIs) and runs impact assessment 
 
 ## Preparing input data
 
-Two steps are required for preparing the input data, defining recycling routes and products, and adding data.
+Three steps are required for preparing the lca: defining the database name, defining recycling routes and products, and adding data.
+
+The database and project name in brightway can simply be set in constants.py under the PROJECT_NAME and DATABASE_NAME variables.
 
 ### Defining routes and products
 

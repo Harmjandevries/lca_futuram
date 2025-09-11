@@ -1,9 +1,8 @@
 import bw2data as bd
 from helpers.lca_builder import LCABuilder
-from helpers.constants import Product, Route, Scenario, Location
+from helpers.constants import Product, Route, Scenario, Location, PROJECT_NAME, DATABASE_NAME
 
-PROJECT_NAME = "nonbrokenproject"
-DATABASE_NAME = "batt_lci"
+
 
 bd.projects.set_current(PROJECT_NAME)
 

@@ -2,6 +2,29 @@ from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
 
+PROJECT_NAME = "nonbrokenproject"
+DATABASE_NAME = "batt_lci"
+
+class Route(Enum):
+    PYRO_HYDRO = "BATT_LIBToPyro1"
+    PYRO_HYDRO_PRETREATMENT = "BATT_LIBToPyrolysis4"
+    HYDRO = "Batt_LIBToPyrolysis2"
+    BATT_NiCdSorted = "BATT_NiCdSorted"
+    BATT_LeadAcidSorted = "BATT_LeadAcidSorted"
+    BATT_ZnAlkaliSorted = "BATT_ZnAlkaliSorted"
+    BATT_NiMHSorted = "BATT_NiMHSorted"
+
+
+class Product(Enum):
+    BattPb = "battPb"
+    BattZn = "battZn"
+    BattNiMH = "battNiMH"
+    BattNiCd = "battNiCd"
+    battLiNMC111 = "battLiNMC111"
+    battLiNMC811 = "battLiNMC811"
+    battLiFP_subsub = "battLiFP_subsub"
+    battLiNCA_subsub = "battLiNCA_subsub"
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_FOLDER = PROJECT_ROOT / "data"
@@ -29,26 +52,6 @@ class Scenario(Enum):
 class Location(Enum):
     EU27_4="EU27+4"
 
-class Route(Enum):
-    PYRO_HYDRO="BATT_LIBToPyro1"
-    PYRO_HYDRO_PRETREATMENT = "BATT_LIBToPyrolysis4"
-    HYDRO = "Batt_LIBToPyrolysis2"
-    BATT_NiCdSorted="BATT_NiCdSorted"
-    BATT_LeadAcidSorted="BATT_LeadAcidSorted"
-    BATT_ZnAlkaliSorted="BATT_ZnAlkaliSorted"
-    BATT_NiMHSorted="BATT_NiMHSorted"
-    
-
-
-class Product(Enum):
-    BattPb="battPb"
-    BattZn="battZn"
-    BattNiMH="battNiMH"
-    BattNiCd="battNiCd"
-    battLiNMC111="battLiNMC111"
-    battLiNMC811="battLiNMC811"
-    battLiFP_subsub="battLiFP_subsub"
-    battLiNCA_subsub="battLiNCA_subsub"
 
 
 route_lci_names = {
