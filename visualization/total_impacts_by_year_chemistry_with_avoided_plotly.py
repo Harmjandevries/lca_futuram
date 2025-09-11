@@ -17,16 +17,16 @@ lcia_results = lca_builder.lcia_results
 # Helper: map Chemistry enum to readable label
 def get_chemistry_label(chemistry):
     mapping = {
-        # Chemistry.BattPb: "Lead-acid",
+        Chemistry.BattPb: "Lead-acid",
         Chemistry.BattZn: "Zn-alkali",
-        # Chemistry.BattNiMH: "NiMH",
-        # Chemistry.BattNiCd: "NiCd",
-        # Chemistry.battLiNMC111: "Li-ion NMC111",
-        # Chemistry.battLiNMC811: "Li-ion NMC811",
-        # Chemistry.battLiFP_subsub: "Li-ion LFP",
-        # Chemistry.battLiNCA_subsub: "Li-ion NCA"
+        Chemistry.BattNiMH: "NiMH",
+        Chemistry.BattNiCd: "NiCd",
+        Chemistry.battLiNMC111: "Li-ion NMC111",
+        Chemistry.battLiNMC811: "Li-ion NMC811",
+        Chemistry.battLiFP_subsub: "Li-ion LFP",
+        Chemistry.battLiNCA_subsub: "Li-ion NCA"
     }
-    return mapping.get(chemistry, "Other")
+    return mapping.get(chemistry.value)
 
 # Collect data
 data = []
@@ -35,8 +35,6 @@ for result in lcia_results:
     year = result.lci.year
     label = get_chemistry_label(chem)
 
-    if label == "Other":
-        continue
 
     inflow = result.lci.total_inflow_amount
     total_impact_value = result.total_impact * inflow
@@ -69,13 +67,13 @@ avoided_df = filtered.pivot(index="year", columns="chemistry", values="avoided")
 
 # Column order
 column_order = [
-    # "Li-ion NMC111",
-    # "Li-ion NMC811",
-    # "Li-ion LFP",
-    # "Lead-acid",
+    "Li-ion NMC111",
+    "Li-ion NMC811",
+    "Li-ion LFP",
+    "Lead-acid",
     "Zn-alkali",
-    # "NiMH",
-    # "NiCd"
+    "NiMH",
+    "NiCd"
 ]
 impact_df = impact_df[[c for c in column_order if c in impact_df.columns]]
 avoided_df = avoided_df[[c for c in column_order if c in avoided_df.columns]]

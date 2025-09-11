@@ -13,3 +13,4 @@ data/
 .idea/
 data/
 psilca
+code_folder/__pycache__/
