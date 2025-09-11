@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import List
 import json
-from .constants import PRICES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Chemistry, INPUT_DATA_FOLDER, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
+from .constants import PRICES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
 import bw2data as bd
 from dataclasses import dataclass
 import bw2calc as bc
@@ -24,16 +24,16 @@ class LCABuilder:
         self.lcia_results: List[SingleLCIAResult] = []
 
     def build_all_lcis(self,
-                  database: bd.Database,
-                  route_selection:List[Route],
-                  chemistry_selection: List[Chemistry],
-                  year_selection=List[int],
-                  scenario_selection=List[Scenario],
-                  location_selection=List[Location],
-                  ):
+                       database: bd.Database,
+                       route_selection:List[Route],
+                       product_selection: List[Product],
+                       year_selection=List[int],
+                       scenario_selection=List[Scenario],
+                       location_selection=List[Location],
+                       ):
         for route in route_selection:
 
-            for chemistry in chemistry_selection:
+            for product in product_selection:
                 for year in year_selection:
                     for scenario in scenario_selection:
                         # Filter scenarios for relevant years
@@ -41,24 +41,24 @@ class LCABuilder:
                         (scenario in [Scenario.BAU, Scenario.CIR, Scenario.REC] and year not in SUPPORTED_YEARS_SCENARIO):
                             continue
                         for location in location_selection:
-                            lci = self.build_lci_for_route(database=database, route=route, chemistry=chemistry,year=year,scenario=scenario,location=location)
+                            lci = self.build_lci_for_route(database=database, route=route, product=product,year=year,scenario=scenario,location=location)
                             if lci:
                                 self.lcis.append(lci)
-                                print(f"Finished LCI for route: {route.value}, scenario: {scenario.value}, chemistry: {chemistry.value}, year: {year}, location: {location.value}")
+                                print(f"Finished LCI for route: {route.value}, scenario: {scenario.value}, product: {product.value}, year: {year}, location: {location.value}")
 
 
         # Adds all the lci_dict together in a big dict
         big_dict = {k: v for lci in self.lcis for k, v in lci.lci_dict.items()}
         database.write(big_dict)
 
-    def build_lci_for_route(self, database: bd.Database, route:Route, chemistry:Chemistry, year: int, scenario:Scenario, location:Location):
+    def build_lci_for_route(self, database: bd.Database, route:Route, product:Product, year: int, scenario:Scenario, location:Location):
         input_folder = INPUT_DATA_FOLDER / route.value
 
         mfa_df = pd.read_csv(input_folder / "rm_output.csv").fillna("")
-        if chemistry.value in pd.ExcelFile( input_folder / "lci_builder.xlsx").sheet_names:
+        if product.value in pd.ExcelFile( input_folder / "lci_builder.xlsx").sheet_names:
             lci_builder_df = pd.read_excel(
                 input_folder / "lci_builder.xlsx",
-                sheet_name=chemistry.value,
+                sheet_name=product.value,
                 dtype={"Layer": str}
             ).fillna("")
         else:
@@ -211,7 +211,7 @@ class LCABuilder:
         return SingleLCI(
             main_activity_flow_name=main_activity_flow_name,
             avoided_impacts_flow_name=avoided_impacts_flow_name,
-            chemistry=chemistry, 
+            product=product, 
             route=route, 
             scenario=scenario,
             year=year,

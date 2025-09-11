@@ -41,7 +41,7 @@ class Route(Enum):
     
 
 
-class Chemistry(Enum):
+class Product(Enum):
     BattPb="battPb"
     BattZn="battZn"
     BattNiMH="battNiMH"
@@ -66,7 +66,7 @@ route_lci_names = {
 class SingleLCI:
     """Class that holds all information for an LCI"""
     route: Route
-    chemistry:Chemistry
+    product:Product
     scenario: Scenario
     location: Location
     year:int
