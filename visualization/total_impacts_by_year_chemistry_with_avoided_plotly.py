@@ -1,7 +1,7 @@
 import pandas as pd
 import bw2data as bd
 import plotly.graph_objects as go
-from code_folder.helpers.constants import Chemistry
+from code_folder.helpers.constants import Product
 from code_folder.helpers.lca_builder import LCABuilder
 
 PROJECT_NAME = "nonbrokenproject"
@@ -14,26 +14,26 @@ lca_builder = LCABuilder()
 lca_builder.load_latest_lcia_results()
 lcia_results = lca_builder.lcia_results
 
-# Helper: map Chemistry enum to readable label
-def get_chemistry_label(chemistry):
+# Helper: map Product enum to readable label
+def get_product_label(product):
     mapping = {
-        Chemistry.BattPb: "Lead-acid",
-        Chemistry.BattZn: "Zn-alkali",
-        Chemistry.BattNiMH: "NiMH",
-        Chemistry.BattNiCd: "NiCd",
-        Chemistry.battLiNMC111: "Li-ion NMC111",
-        Chemistry.battLiNMC811: "Li-ion NMC811",
-        Chemistry.battLiFP_subsub: "Li-ion LFP",
-        Chemistry.battLiNCA_subsub: "Li-ion NCA"
+        Product.BattPb: "Lead-acid",
+        Product.BattZn: "Zn-alkali",
+        Product.BattNiMH: "NiMH",
+        Product.BattNiCd: "NiCd",
+        Product.battLiNMC111: "Li-ion NMC111",
+        Product.battLiNMC811: "Li-ion NMC811",
+        Product.battLiFP_subsub: "Li-ion LFP",
+        Product.battLiNCA_subsub: "Li-ion NCA"
     }
-    return mapping.get(chemistry.value)
+    return mapping.get(product.value)
 
 # Collect data
 data = []
 for result in lcia_results:
-    chem = result.lci.chemistry
+    chem = result.lci.product
     year = result.lci.year
-    label = get_chemistry_label(chem)
+    label = get_product_label(chem)
 
 
     inflow = result.lci.total_inflow_amount
@@ -48,7 +48,7 @@ for result in lcia_results:
 
     data.append({
         "year": year,
-        "chemistry": label,
+        "product": label,
         "impact": total_impact_value,
         "avoided": avoided_impact_value
     })
@@ -56,14 +56,14 @@ for result in lcia_results:
 df = pd.DataFrame(data)
 
 # Group
-grouped = df.groupby(["year", "chemistry"]).sum().reset_index()
+grouped = df.groupby(["year", "product"]).sum().reset_index()
 
 # Filter for 2025–2050
 filtered = grouped[(grouped["year"] >= 2025) & (grouped["year"] <= 2050)]
 
 # Pivot: impacts and avoided
-impact_df = filtered.pivot(index="year", columns="chemistry", values="impact").fillna(0)
-avoided_df = filtered.pivot(index="year", columns="chemistry", values="avoided").fillna(0)
+impact_df = filtered.pivot(index="year", columns="product", values="impact").fillna(0)
+avoided_df = filtered.pivot(index="year", columns="product", values="avoided").fillna(0)
 
 # Column order
 column_order = [

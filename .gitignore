@@ -15,3 +15,4 @@ data/
 psilca
 code_folder/__pycache__/
 visualization
+code_folder/helpers/__pycache__

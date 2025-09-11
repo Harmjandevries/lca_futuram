@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import List
 import json
-from .constants import PRICES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
+from .constants import SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
 import bw2data as bd
 from dataclasses import dataclass
 import bw2calc as bc
@@ -17,8 +17,6 @@ class LCABuilder:
         # Setup BW databases
         self.ecoinvent = bd.Database("ecoinvent")
         self.biosphere = bd.Database("biosphere")
-        with open(PRICES_FILE, "r") as file:
-            self.prices = json.load(file)
 
         self.lcis: List[SingleLCI] = []
         self.lcia_results: List[SingleLCIAResult] = []

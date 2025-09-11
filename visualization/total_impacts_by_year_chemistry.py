@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import bw2data as bd
-from code_folder.helpers.constants import Chemistry
+from code_folder.helpers.constants import Product
 
 from code_folder.helpers.lca_builder import LCABuilder
 
@@ -15,27 +15,27 @@ lca_builder = LCABuilder()
 lca_builder.load_latest_lcia_results()
 lcia_results = lca_builder.lcia_results
 
-# Helper: map Chemistry enum to readable label
-def get_chemistry_label(chemistry):
+# Helper: map Product enum to readable label
+def get_product_label(product):
     mapping = {
-        Chemistry.BattPb: "Lead-acid",
-        Chemistry.BattZn: "Zn-alkali",
-        Chemistry.BattNiMH: "NiMH",
-        Chemistry.BattNiCd: "NiCd",
-        Chemistry.battLiNMC111: "Li-ion NMC111",
-        Chemistry.battLiNMC811: "Li-ion NMC811",
-        Chemistry.battLiFP_subsub: "Li-ion LFP"
+        Product.BattPb: "Lead-acid",
+        Product.BattZn: "Zn-alkali",
+        Product.BattNiMH: "NiMH",
+        Product.BattNiCd: "NiCd",
+        Product.battLiNMC111: "Li-ion NMC111",
+        Product.battLiNMC811: "Li-ion NMC811",
+        Product.battLiFP_subsub: "Li-ion LFP"
     }
-    return mapping.get(chemistry, "Other")
+    return mapping.get(product, "Other")
 
 # Aggregate data
 data = []
 
 for result in lcia_results:
-    chem = result.lci.chemistry
+    chem = result.lci.product
     year = result.lci.year
 
-    label = get_chemistry_label(chem)
+    label = get_product_label(chem)
     
     # Skip if not in our mapping
     if label == "Other":
@@ -46,21 +46,21 @@ for result in lcia_results:
 
     data.append({
         "year": year,
-        "chemistry": label,
+        "product": label,
         "impact": total_impact_value
     })
 
 # Create DataFrame
 df = pd.DataFrame(data)
 
-# Group by year and chemistry
-grouped = df.groupby(['year', 'chemistry']).sum().reset_index()
+# Group by year and product
+grouped = df.groupby(['year', 'product']).sum().reset_index()
 
 # Filter years >= 2025 and only even steps (2025, 2027, ...)
 filtered = grouped[(grouped['year'] >= 2025) & (grouped['year'] % 2 == 1)]
 
 # Pivot to wide format
-pivot_df = filtered.pivot(index='year', columns='chemistry', values='impact').fillna(0)
+pivot_df = filtered.pivot(index='year', columns='product', values='impact').fillna(0)
 
 # Optional: sort columns in custom order if desired
 column_order = [

@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import bw2data as bd
-from helpers.constants import Chemistry, Route
-from helpers.lca_builder import LCABuilder
+from code_folder.helpers.constants import Product, Route
+from code_folder.helpers.lca_builder import LCABuilder
 import time
 
 import pyautogui
@@ -10,12 +10,12 @@ import time
 
 
 # Helper to map family
-def get_battery_family(chemistry):
-    if chemistry.value.startswith("battLi"):
+def get_battery_family(product):
+    if product.value.startswith("battLi"):
         return "li-ion"
-    elif chemistry == Chemistry.BattPb:
+    elif product == Product.BattPb:
         return "leadacid"
-    elif chemistry == Chemistry.BattZn:
+    elif product == Product.BattZn:
         return "znalkali"
     else:
         return None
@@ -45,7 +45,7 @@ lcia_results = lca_builder.lcia_results
 data = []
 
 for result in lcia_results:
-    chem = result.lci.chemistry
+    chem = result.lci.product
     route = result.lci.route
     year = result.lci.year
     family = get_battery_family(chem)

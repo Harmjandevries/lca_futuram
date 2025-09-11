@@ -12,7 +12,6 @@ INPUT_DATA_FOLDER = DATA_FOLDER / "input_data"
 LOADABLE_LCI_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcis"
 LOADABLE_LCIA_RESULTS_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcia_results"
 BW_FORMAT_LCIS_DATA_FOLDER = DATA_FOLDER / "output_data/bw_format_lcis"
-PRICES_FILE = DATA_FOLDER / "prices/prices.json"
 ECOINVENT_NAME = "ecoinvent"
 BIOSPHERE_NAME = "biosphere"
 

@@ -2,21 +2,21 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import plotly.express as px
 import bw2data as bd
-from helpers.constants import Chemistry
+from code_folder.helpers.constants import Product
 
-from helpers.lca_builder import LCABuilder
+from code_folder.helpers.lca_builder import LCABuilder
 
 
-# Mapping battery chemistry to family
-def get_battery_family(chemistry):
-    if chemistry.value.startswith("battLi"):
+# Mapping battery product to family
+def get_battery_family(product):
+    if product.value.startswith("battLi"):
         return "li-ion"
-    elif chemistry == Chemistry.BattPb:
+    elif product == Product.BattPb:
         return "leadacid"
-    elif chemistry == Chemistry.BattZn:
+    elif product == Product.BattZn:
         return "znalkali"
     else:
-        return None  # Ignore other chemistries
+        return None  # Ignore other products
 
 
 PROJECT_NAME = "nonbrokenproject"
@@ -35,12 +35,12 @@ lcia_results = lca_builder.lcia_results
 data = []
 
 for result in lcia_results:
-    chem = result.lci.chemistry
+    chem = result.lci.product
     year = result.lci.year
     family = get_battery_family(chem)
     
     if family is None:
-        continue  # Skip non-relevant chemistries
+        continue  # Skip non-relevant products
 
     # Compute total impact for this battery type in this year
     total_impact_value = result.total_impact * result.lci.total_inflow_amount

@@ -10,11 +10,13 @@ This repository builds life cycle inventories (LCIs) and runs impact assessment 
 
 ## Preparing input data
 
-Two steps are required for preparing the input data:
+Two steps are required for preparing the input data, defining recycling routes and products, and adding data.
 
 ### Defining routes and products
 
-In the constants.py file, define the recycling 
+In the constants.py file, define the 'Route' and 'Product' parameters. The values for these need to coincide with respectively the 'Layer 1' and the 'Stock/Flow ID' for the input flow that you want to consider.
+
+### Input data
 All data are read from the `data` directory in the project root. The folder structure is:
 
 ```
@@ -23,51 +25,36 @@ data/
 │  ├─ <route>/
 │  │  ├─ rm_output.csv
 │  │  └─ lci_builder.xlsx
-└─ prices/prices.json
 ```
 
-### Routes and products
+rm_output.csv is simply the output of the recovery model as-is. To make the code faster, you can pre-emptively make a selection of only the relevant flows you wish to analyse. Required columns are Year, Scenario, Stock/Flow ID, Layer 1-4 and Value.
 
-Route folders must be named after the values in `helpers/constants.py`. Examples include `BATT_LIBToPyro1`, `Batt_LIBToPyrolysis2`, `BATT_LeadAcidSorted` and others. Each Excel workbook requires one sheet per product. Valid product sheet names are: `battLiNMC111`, `battLiNMC811`, `battLiFP_subsub`, `battLiNCA_subsub`, `battPb`, `battZn`, `battNiMH`, and `battNiCd`.
+lci_builder.xlsx defines how the Life Cycle Inventory will be constructed from the recovery model. Every row represents an LCI exchange. Exchanges can be read from the recovery model, or defined independently if the recovery model does not provide information (such as for electricity). There are 5 possible ways to define a row:
+1. Input product flow: This has 'LCI Flow Type' column set to 'production'. It is the input amount for the recovery model, which the code will read and scale to 1 for the LCI.
+2. Recovered outputs: This has the 'LCI Flow Type'  column set to 'recovered'. The code will read the recovered amount for each year/scenario from the recovery model and scale the recovered output in the LCI accordingly.
+3. Technosphere exchanges: This has the 'LCI Flow Type' column set to ' technosphere'. These can be:
+   1. read from the recovery model. In this case the recovery model flow needs to be defined.
+   2. predefined per kg of input material, in this case the amount per kg of input is set in the 'Amount' column. 
+4. Biosphere exchanges: This has the 'LCI Flow Type' set to 'biosphere'. The amount is defined per kg of input material.
 
-### `rm_output.csv`
-
-Comma‑separated table used to scale flows. Required columns:
-
-- `Year` – integer year of the scenario.
-- `Scenario` – one of `OBS`, `BAU`, `REC`, or `CIR`.
-- `Stock/Flow ID` – identifiers matching the Excel file.
-- `Layer 1` .. `Layer 4` – hierarchical material labels.
-- `Value` – numeric amount of the flow.
-
-Additional `Layer` columns can be present and are referenced in the Excel file.
-
-### `lci_builder.xlsx`
-
-Workbook containing the LCI definition. Each sheet corresponds to a product and must include the following columns:
-
-- `LCI Flow Type` – `production` for the main activity or blank for others.
-- `LCI Flow Name` – name of the activity or exchange.
-- `Stock/Flow IDs` – comma separated list of IDs appearing in `rm_output.csv`.
-- `Materials` – comma separated list linked to the chosen `Layer`.
-- `Layer` – number of the layer column in `rm_output.csv` used for scaling.
-- `Flow Direction` – `input`, `output`, or `recovered`.
-- `Linked process` – external process in the format `DATABASE:process name` (e.g. `ECOINVENT:market for copper`).
-- `Region` – region code such as `RER`.
-- `Unit` – measurement unit.
-- `Categories` – comma separated Brightway categories.
-- Optional: `Scaled by flows`, `Amount`, `Element to compound ratio`.
-
-At least one row must have `LCI Flow Type` set to `production` to define the main activity. Rows with `Flow Direction` set to `recovered` describe recovered materials and generate avoided impact exchanges.
+Columns:
+- `Stock/Flow IDs` – Stock/Flow ID to be read (for 1, 2, 3i)
+- `Materials` – Selection of materials to be read from the RM
+- `Layer` – Layer to read the materials from in the RM, for example 3 for materials, 4 for elements
+- `Linked process` – ecoinvent/biosphere process to link to this exchange (for 3/4). Put the name of the database in front of the semicolon and the exchange after.
+- `Categories` – category, for biosphere exchanges only
+- `Region` – ecoinvent/biosphere region, for 3/4 only 
+- `LCI Flow Name` – desired name for this flow in the LCI
+- `Flow Direction` – direction of the flow in the recycling system (e.g. input for the product waste, electricity, reagents, output for emissions, slag)
+- `LCI Flow Type` – see section above
+- `Amount` – amount per kg of input product, only defined if not present in recovery model (3ii, 4)
+- `Unit` – unit for the ecoinvent/biosphere exchange
+- `Scaled by flows` - edge case for batteries, not relevant
+- `Recovery efficiency` - for recovered materials, defines how well recovered materials replace the market product. For example, if recovered nickel sulfate replaces new nickel sulfate at a 80% efficiency on the market, put 0.8.
 
 ## Running the model
 
 1. Import the required external databases (ecoinvent and biosphere) into a Brightway project.
-2. Place input files and `prices/prices.json` as described above.
-3. Execute the builder script:
-
-```bash
-python code_folder/build_batt_lca.py
-```
-
-The script creates a new Brightway database, constructs LCIs for all scenarios, runs a climate‑change LCIA, and saves the results under `data/output_data`.
+2. Define the constants and inputs file
+3. Run the build_all_lcis() method
+4. Run the run_lcia() method

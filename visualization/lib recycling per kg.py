@@ -1,7 +1,7 @@
 import pandas as pd
 import plotly.express as px
-from helpers.constants import Route, Scenario, Chemistry
-from helpers.lca_builder import LCABuilder
+from code_folder.helpers.constants import Route, Scenario, Product
+from code_folder.helpers.lca_builder import LCABuilder
 import bw2data as bd
 
 # ---- Setup ----
@@ -15,15 +15,15 @@ lca_builder = LCABuilder()
 lca_builder.load_latest_lcia_results()
 lcia_results = lca_builder.lcia_results
 
-# ---- Select only desired chemistries, routes, year, scenario ----
-desired_chemistries = [Chemistry.battLiNMC111, Chemistry.battLiNMC811, Chemistry.battLiFP_subsub, Chemistry.battLiNCA_subsub, Chemistry.BattZn, Chemistry.BattPb, Chemistry.BattNiCd, Chemistry.BattNiMH]
+# ---- Select only desired products, routes, year, scenario ----
+desired_products = [Product.battLiNMC111, Product.battLiNMC811, Product.battLiFP_subsub, Product.battLiNCA_subsub, Product.BattZn, Product.BattPb, Product.BattNiCd, Product.BattNiMH]
 desired_routes = [Route.HYDRO, Route.PYRO_HYDRO, Route.PYRO_HYDRO_PRETREATMENT, Route.BATT_ZnAlkaliSorted, Route.BATT_LeadAcidSorted, Route.BATT_NiMHSorted, Route.BATT_NiCdSorted]
 selected_year = 2030
 selected_scenario = Scenario.BAU
 
 lcia_results_selection = [
     res for res in lcia_results
-    if res.lci.chemistry in desired_chemistries
+    if res.lci.product in desired_products
     and res.lci.route in desired_routes
     and res.lci.year == selected_year
     and res.lci.scenario == selected_scenario
@@ -45,15 +45,15 @@ material_colors = {
     'ferronickel alloy': "#be5f32",     
 }
 
-# ---- Define route and chemistry names ----
-chemistry_labels = {
-    Chemistry.battLiFP_subsub: "LFP",
-    Chemistry.battLiNMC111: "NMC111",
-    Chemistry.battLiNMC811: "NMC811",
-    Chemistry.BattZn: "Zinc-based",
-    Chemistry.BattPb: "Lead-acid",
-    Chemistry.BattNiMH: "Nickel-metal hybride",
-    Chemistry.BattNiCd: "Nickel-cadmium"
+# ---- Define route and product names ----
+product_labels = {
+    Product.battLiFP_subsub: "LFP",
+    Product.battLiNMC111: "NMC111",
+    Product.battLiNMC811: "NMC811",
+    Product.BattZn: "Zinc-based",
+    Product.BattPb: "Lead-acid",
+    Product.BattNiMH: "Nickel-metal hybride",
+    Product.BattNiCd: "Nickel-cadmium"
 }
 
 route_labels = {
@@ -69,7 +69,7 @@ route_labels = {
 rows = []
 
 for res in lcia_results_selection:
-    chem = chemistry_labels[res.lci.chemistry]
+    chem = product_labels[res.lci.product]
     route = route_labels[res.lci.route]
     battery_label = f"{chem} - {route}"
 
@@ -77,7 +77,7 @@ for res in lcia_results_selection:
     materials = res.impact_per_alloy
 
     # For zinc batteries: merge silver into special high grade zinc
-    if res.lci.chemistry == Chemistry.BattZn:
+    if res.lci.product == Product.BattZn:
         zinc_impact = 0.0
         other_materials = []
         for m in materials:
