@@ -84,8 +84,7 @@ class LCABuilder:
         input_amount = self.get_flow_amount(mfa_df=mfa_df, flows_list=input_flow_ids, product_list=product_list, layer="")
 
         if input_amount==0:
-            print("This should never be 0")
-            exit(0)
+            print(f"Did not find input amount for {str(route.value)}, {str(product.value)}, {str(year)}, {str(scenario.value)}  Please fix this issue and run again")
 
         # Build avoided impact activity
         avoided_impacts_flow_name =  f"avoided impacts for {route_lci_names[route]} {main_activity_row['LCI Flow Name'].iloc[0]} - {year} - {scenario.value}".lower()

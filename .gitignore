@@ -11,7 +11,11 @@ data/
 /dataSources.local.xml
 .env
 .idea/
-data/
+data/input_data
+data/output_data
+data/prices
+data/lci-batt_lci.xlsx
+data/recovery_model_outputs
 psilca
 code_folder/__pycache__/
 visualization
