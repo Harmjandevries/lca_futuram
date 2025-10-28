@@ -94,7 +94,6 @@ class LCABuilder:
         )
         lci_dict.update(avoided_impacts_dict)
 
-
         # Build recovered metal activities
         output_recovered_material_rows = lci_builder_df[
             (lci_builder_df["Flow Direction"]=="recovered")
@@ -118,8 +117,9 @@ class LCABuilder:
                 process_id=process_id,
                 amount=-total_material / input_amount,
             )
-            lci_dict[(database.name, main_activity_id)]["exchanges"].append(
-                technosphere_exchange
+            self._merge_exchange(
+                lci_dict[(database.name, main_activity_id)]["exchanges"],
+                technosphere_exchange,
             )
             output_amounts_alloy[output_reco_row['LCI Flow Name']] = total_material / input_amount
             for i in range(0, len(material_list)):
@@ -145,15 +145,10 @@ class LCABuilder:
                 categories=tuple(map(str.strip, output_reco_row["Categories"].split(", "))),
                 unit = output_reco_row["Unit"],
             )
-            # If this exchange exists already, add it
-            # Check if exchange with same name and input already exists
-            exchanges = lci_dict[(database.name, avoided_impacts_activity_id)]["exchanges"]
-            for ex in exchanges:
-                if ex["name"] == avoided_impact_exchange["name"] and ex["input"] == avoided_impact_exchange["input"]:
-                    ex["amount"] += avoided_impact_exchange["amount"]
-                    break
-            else:
-                exchanges.append(avoided_impact_exchange)
+            self._merge_exchange(
+                lci_dict[(database.name, avoided_impacts_activity_id)]["exchanges"],
+                avoided_impact_exchange,
+            )
 
         # Build external activities from external sources
         external_activity_rows = lci_builder_df[(lci_builder_df['Linked process']!='')&(lci_builder_df['Flow Direction']!="recovered")]
@@ -196,14 +191,10 @@ class LCABuilder:
                 categories=tuple(map(str.strip, output_reco_row["Categories"].split(", ")))
             )
             # If this exchange exists already, add it
-            # Check if exchange with same name and input already exists
-            exchanges = lci_dict[(database.name, main_activity_id)]["exchanges"]
-            for ex in exchanges:
-                if ex["name"] == external_exchange["name"] and ex["input"] == external_exchange["input"]:
-                    ex["amount"] += external_exchange["amount"]
-                    break
-            else:
-                exchanges.append(external_exchange)
+            self._merge_exchange(
+                lci_dict[(database.name, main_activity_id)]["exchanges"],
+                external_exchange,
+            )
 
         return SingleLCI(
             main_activity_flow_name=main_activity_flow_name,
@@ -305,3 +296,12 @@ class LCABuilder:
 
     def load_latest_lcia_results(self):
         self.lcia_results = StorageHelper.load_latest_lcia_results()
+
+    @staticmethod
+    def _merge_exchange(exchanges: List[dict], new_exchange: dict) -> None:
+        """Merge an exchange into a list, summing amounts for duplicate entries."""
+        for exchange in exchanges:
+            if exchange["name"] == new_exchange["name"] and exchange["input"] == new_exchange["input"]:
+                exchange["amount"] += new_exchange["amount"]
+                return
+        exchanges.append(new_exchange)
