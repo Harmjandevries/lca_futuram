@@ -18,8 +18,8 @@ db = bd.Database(DATABASE_NAME)
 # scenario_selection = [Scenario.BAU, Scenario.REC, Scenario.CIR]
 # location_selection = [Location.EU27_4]
 
-product_selection = [Product.battLiNCA_subsub]
-route_selection = [Route.PYRO_HYDRO]
+product_selection = [Product.WEEE_Cat1, Product.WEEE_Cat2, Product.WEEE_Cat3, Product.WEEE_Cat4a, Product.WEEE_Cat4b, Product.WEEE_Cat4c, Product.WEEE_Cat5, Product.WEEE_Cat6]
+route_selection = [Route.WEEE]
 year_selection = [2040]
 scenario_selection = [Scenario.BAU]
 location_selection = [Location.EU27_4]

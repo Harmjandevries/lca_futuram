@@ -13,6 +13,7 @@ class Route(Enum):
     BATT_LeadAcidSorted = "BATT_LeadAcidSorted"
     BATT_ZnAlkaliSorted = "BATT_ZnAlkaliSorted"
     BATT_NiMHSorted = "BATT_NiMHSorted"
+    WEEE = "WEEE"
 
 
 class Product(Enum):
@@ -24,6 +25,14 @@ class Product(Enum):
     battLiNMC811 = "battLiNMC811"
     battLiFP_subsub = "battLiFP_subsub"
     battLiNCA_subsub = "battLiNCA_subsub"
+    WEEE_Cat1 = "WEEE_Cat1"
+    WEEE_Cat2 = "WEEE_Cat2"
+    WEEE_Cat3 = "WEEE_Cat3"
+    WEEE_Cat4a = "WEEE_Cat4a"
+    WEEE_Cat4b = "WEEE_Cat4b"
+    WEEE_Cat4c = "WEEE_Cat4c"
+    WEEE_Cat5 = "WEEE_Cat5"
+    WEEE_Cat6 = "WEEE_Cat6"
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -61,7 +70,8 @@ route_lci_names = {
     Route.BATT_NiMHSorted: "Recycling of",
     Route.BATT_NiCdSorted: "Recycling of",
     Route.BATT_ZnAlkaliSorted: "Recycling of",
-    Route.HYDRO: "Hydrometallurgical recycling of"
+    Route.HYDRO: "Hydrometallurgical recycling of",
+    Route.WEEE: "Shredding of "
 }
 
 @dataclass

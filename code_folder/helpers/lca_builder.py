@@ -1,9 +1,7 @@
 import pandas as pd
 from typing import List
-import json
 from .constants import SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
 import bw2data as bd
-from dataclasses import dataclass
 import bw2calc as bc
 from .brightway_helpers import BrightwayHelpers
 from .storage_helper import StorageHelper
@@ -104,6 +102,7 @@ class LCABuilder:
 
             process_name = output_reco_row['LCI Flow Name']
             existing_id = BrightwayHelpers.get_existing_process_id_by_name(lcis=self.lcis, name=process_name)
+            multiplier = self._get_recovery_multiplier(output_reco_row)
 
             if existing_id:
                 process_id = existing_id
@@ -111,7 +110,12 @@ class LCABuilder:
                 process_id, process_dict = BrightwayHelpers.build_base_process(process_name)
                 lci_dict.update(process_dict)
            
-            total_material = self.get_flow_amount(mfa_df=mfa_df, flows_list=flows_list, product_list=product_list, material_list=material_list, layer=str(output_reco_row["Layer"]))
+            total_material = self.get_flow_amount(
+                mfa_df=mfa_df,
+                flows_list=flows_list,
+                product_list=product_list,
+                material_list=material_list,
+                layer=str(output_reco_row["Layer"]))  * multiplier
             technosphere_exchange = BrightwayHelpers.build_technosphere_exchange(
                 name=output_reco_row["LCI Flow Name"],
                 process_id=process_id,
@@ -125,7 +129,7 @@ class LCABuilder:
             for i in range(0, len(material_list)):
                 material = material_list[i]
                 layer = output_reco_row["Layer"].split(",")[i] if "," in output_reco_row["Layer"] else output_reco_row["Layer"]
-                amount = self.get_flow_amount(mfa_df=mfa_df, flows_list=flows_list, product_list=product_list, material_list=[material],layer=layer)
+                amount = self.get_flow_amount(mfa_df=mfa_df, flows_list=flows_list, product_list=product_list, material_list=[material],layer=layer) * multiplier
                 if material not in output_amounts_element:
                     output_amounts_element[material] = amount / input_amount
                 else:
@@ -152,43 +156,43 @@ class LCABuilder:
 
         # Build external activities from external sources
         external_activity_rows = lci_builder_df[(lci_builder_df['Linked process']!='')&(lci_builder_df['Flow Direction']!="recovered")]
-        for _, output_reco_row in external_activity_rows.iterrows():
+        for _, external_row in external_activity_rows.iterrows():
             # Scale the ecoinvent processes by the flow they are matched to in ecoinvent
-            if output_reco_row['Stock/Flow IDs']:
+            if external_row['Stock/Flow IDs']:
                 total_flow = self.get_flow_amount(
                     mfa_df=mfa_df,
                     product_list=product_list,
-                    material_list=[m.strip() for m in output_reco_row["Materials"].split(',')],
-                    flows_list=[m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',')],
-                    layer=str(output_reco_row['Layer']))
+                    material_list=[m.strip() for m in external_row["Materials"].split(',')],
+                    flows_list=[m.strip() for m in external_row["Stock/Flow IDs"].split(',')],
+                    layer=str(external_row['Layer']))
                 amount = total_flow/input_amount
-            elif output_reco_row["Scaled by flows"]:
-                scaled_by_flows = [m.strip() for m in output_reco_row["Scaled by flows"].split(',')]
+            elif external_row["Scaled by flows"]:
+                scaled_by_flows = [m.strip() for m in external_row["Scaled by flows"].split(',')]
                 scaling_ratio = self.get_flow_amount(
                     mfa_df=mfa_df,
                     flows_list=scaled_by_flows,
                     product_list=product_list,
                     # Todo bug?
                     )/input_amount
-                if "Element to compound ratio" in output_reco_row:
-                    element_to_compound_ratio = float(output_reco_row["Element to compound ratio"])
+                if "Element to compound ratio" in external_row:
+                    element_to_compound_ratio = float(external_row["Element to compound ratio"])
                 else:
                     element_to_compound_ratio = 1
-                amount = output_reco_row['Amount']*scaling_ratio / element_to_compound_ratio
+                amount = external_row['Amount']*scaling_ratio / element_to_compound_ratio
             else:
-                amount = output_reco_row['Amount']
-            linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
+                amount = external_row['Amount']
+            linked_process_database, linked_process_name = tuple(external_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
             external_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
                 ecoinvent=self.ecoinvent,
                 biosphere=self.biosphere,
                 process_name = linked_process_name,
-                location=output_reco_row["Region"] if output_reco_row["Region"] else "RER",
+                location=external_row["Region"] if external_row["Region"] else "RER",
                 amount=amount,
-                unit=output_reco_row["Unit"],
-                flow_direction=output_reco_row["Flow Direction"],
-                categories=tuple(map(str.strip, output_reco_row["Categories"].split(", ")))
+                unit=external_row["Unit"],
+                flow_direction=external_row["Flow Direction"],
+                categories=tuple(map(str.strip, external_row["Categories"].split(", ")))
             )
             # If this exchange exists already, add it
             self._merge_exchange(
@@ -305,3 +309,19 @@ class LCABuilder:
                 exchange["amount"] += new_exchange["amount"]
                 return
         exchanges.append(new_exchange)
+
+    @staticmethod
+    def _get_recovery_multiplier(row: pd.Series) -> float:
+        """Return the combined multiplier for recovery efficiency and unit conversion."""
+
+        def _parse(value) -> float:
+            if pd.isna(value) or value == "":
+                return 1.0
+            try:
+                return float(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Invalid numeric value '{value}' in recovery configuration") from exc
+
+        unit_conversion = _parse(row.get("Unit conversion", 1.0))
+        recovery_efficiency = _parse(row.get("Recovery efficiency", 1.0))
+        return unit_conversion * recovery_efficiency
