@@ -1,9 +1,13 @@
+"""Shared constants, enums, data paths, and simple data classes used across the project."""
+
 from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
 
-PROJECT_NAME = "nonbrokenproject"
+PROJECT_NAME = "premise"
 DATABASE_NAME = "batt_lci"
+ECOINVENT_NAME = "ecoinvent-3.12-cutoff"
+BIOSPHERE_NAME = "biosphere3"
 
 class Route(Enum):
     PYRO_HYDRO = "BATT_LIBToPyro1"
@@ -44,8 +48,7 @@ INPUT_DATA_FOLDER = DATA_FOLDER / "input_data"
 LOADABLE_LCI_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcis"
 LOADABLE_LCIA_RESULTS_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcia_results"
 BW_FORMAT_LCIS_DATA_FOLDER = DATA_FOLDER / "output_data/bw_format_lcis"
-ECOINVENT_NAME = "ecoinvent"
-BIOSPHERE_NAME = "biosphere"
+
 
 
 class ExternalDatabase(Enum):

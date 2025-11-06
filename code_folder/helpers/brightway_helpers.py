@@ -7,10 +7,7 @@ import bw2data as bd
 class BrightwayHelpers:
     @staticmethod
     def get_existing_process_id_by_name(lcis: List[SingleLCI], name: str) -> Optional[str]:
-        """
-        Checks if a process with the given name exists in any of the lci_dicts in lcis.
-        Returns its process ID (code) if found, else None.
-        """
+        """Return process UUID if a process with given name exists in any LCI, else None."""
         normalized_name = name.strip().lower()
 
         for lci in lcis:
@@ -21,6 +18,7 @@ class BrightwayHelpers:
     
     @staticmethod
     def build_technosphere_exchange(name: str, process_id: str, amount: float):
+        """Create a technosphere exchange pointing to a process in our database."""
         return {
             "input": (DATABASE_NAME, process_id),
             "name": name,
@@ -32,6 +30,10 @@ class BrightwayHelpers:
     
     @staticmethod
     def build_base_process(name: str, is_waste: Optional[bool] = False):
+        """Create a minimal Brightway process with a production exchange.
+
+        Returns (process_id, process_dict_fragment) suitable for Database.write.
+        """
         process_id = str(uuid.uuid4())
         return process_id, {
             (DATABASE_NAME, process_id): {
@@ -53,11 +55,12 @@ class BrightwayHelpers:
     
     @staticmethod
     def build_external_exchange(database: ExternalDatabase, biosphere: bd.Database, ecoinvent: bd.Database, process_name: str, amount: float, unit: str, flow_direction:str, location: str, categories: tuple):
+        """Create an exchange to an external database (ecoinvent/biosphere) with correct sign/type."""
         # Database can be ecoinvent or biosphere
         if database==ExternalDatabase.ECOINVENT:
-            input = BrightwayHelpers.get_ecoinvent_key_by_name(name=process_name, ecoinvent=ecoinvent, location=location)
+            input = BrightwayHelpers.find_ecoinvent_key_by_name(name=process_name, ecoinvent=ecoinvent, location=location)
         if database==ExternalDatabase.BIOSPHERE:
-            input = BrightwayHelpers.get_biosphere_key_by_name(name=process_name, biosphere=biosphere, categories=categories)
+            input = BrightwayHelpers.find_biosphere_key_by_name(name=process_name, biosphere=biosphere, categories=categories)
         return {
         "input": input,
         "name": process_name,
@@ -68,15 +71,19 @@ class BrightwayHelpers:
     }
 
     @staticmethod
-    def get_ecoinvent_key_by_name(name, ecoinvent: bd.Database, location):
+    def find_ecoinvent_key_by_name(name, ecoinvent: bd.Database, location):
+        """Find (database_name, code) for an ecoinvent activity by exact name and location."""
         for act in ecoinvent:
             if act["name"].strip() == name.strip() and act.get("location", "").strip() == location.strip():
-                return ("ecoinvent", act["code"],location)
+                # Use the actual database name and a 2-tuple key as required by Brightway
+                return (ecoinvent.name, act["code"])
         raise ValueError(f"Process not found: {name} @ {location}")
     
     @staticmethod
-    def get_biosphere_key_by_name(name, biosphere: bd.Database, categories=("air", "urban air close to ground")):
+    def find_biosphere_key_by_name(name, biosphere: bd.Database, categories=("air", "urban air close to ground")):
+        """Find (database_name, code) for a biosphere flow by exact name and categories."""
         for flow in biosphere:
             if flow["name"] == name and tuple(flow["categories"]) == categories:
-                return ("biosphere", flow["code"])
+                # Use the actual database name for biosphere
+                return (biosphere.name, flow["code"])
         raise ValueError(f"Biosphere flow not found: {name} @ {categories}")

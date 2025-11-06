@@ -1,3 +1,16 @@
+"""Entry point to build LCIs/LCIA and export results using Brightway.
+
+Configure selections below and run to (re)create the project database,
+build LCIs, export to Excel, and compute LCIA.
+"""
+
+import os
+
+# Workarounds for native library crashes on Windows (MKL/Numba/OpenMP)
+os.environ.setdefault("NUMBA_DISABLE_JIT", "1")
+os.environ.setdefault("MKL_THREADING_LAYER", "SEQUENTIAL")
+os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+
 import bw2data as bd
 from helpers.lca_builder import LCABuilder
 from helpers.constants import Product, Route, Scenario, Location, PROJECT_NAME, DATABASE_NAME
@@ -18,7 +31,7 @@ db = bd.Database(DATABASE_NAME)
 # scenario_selection = [Scenario.BAU, Scenario.REC, Scenario.CIR]
 # location_selection = [Location.EU27_4]
 
-product_selection = [Product.WEEE_Cat1, Product.WEEE_Cat2, Product.WEEE_Cat3, Product.WEEE_Cat4a, Product.WEEE_Cat4b, Product.WEEE_Cat4c, Product.WEEE_Cat5, Product.WEEE_Cat6]
+product_selection = [Product.WEEE_Cat6]
 route_selection = [Route.WEEE]
 year_selection = [2040]
 scenario_selection = [Scenario.BAU]
