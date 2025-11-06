@@ -1,4 +1,4 @@
-# Battery Recycling LCA
+# MFA+LCA integration using the FutuRaM recovery model
 
 This repository builds life cycle inventories (LCIs) and runs impact assessment using the FutuRaM-format MFA data as input, together with manually collected LCA data.
 
@@ -68,4 +68,5 @@ In the file _constants.py_ the following things need to be defined:
 1. Import the required external databases (ecoinvent and biosphere) into a Brightway project.
 2. Define the constants and inputs file
 3. Run the build_all_lcis() method
+
 4. Run the run_lcia() method
