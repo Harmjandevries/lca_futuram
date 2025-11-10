@@ -1,6 +1,7 @@
 import pandas as pd
-from typing import List
+from typing import Dict, Iterable, List, Tuple
 from .constants import SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
+from premise_superstructure import SCENARIO_MAP
 import bw2data as bd
 import bw2calc as bc
 from .brightway_helpers import BrightwayHelpers
@@ -23,6 +24,7 @@ class LCABuilder:
 
         self.lcis: List[SingleLCI] = []
         self.lcia_results: List[SingleLCIAResult] = []
+        self._scenario_parameter_cache: Dict[Tuple[str, int], str] = {}
 
     def build_all_lcis(self,
                        database: bd.Database,
@@ -55,6 +57,7 @@ class LCABuilder:
 
     def build_lci(self, database: bd.Database, route:Route, product:Product, year: int, scenario:Scenario, location:Location):
         """Build a single LCI for a specific (route, product, year, scenario, location)."""
+        self._activate_background_scenario(scenario=scenario, year=year)
         mfa_df, lci_builder_df = self._read_inputs(route=route, product=product, year=year, scenario=scenario)
         if lci_builder_df is None:
             return
@@ -125,6 +128,79 @@ class LCABuilder:
             total_inflow_amount=input_amount,
             output_amounts_alloy=output_amounts_alloy,
             output_amounts_element=output_amounts_element)
+
+    def _activate_background_scenario(self, scenario: Scenario, year: int) -> None:
+        """Activate the Premise parameter set matching the requested scenario/year."""
+        if scenario.value not in SCENARIO_MAP:
+            return
+
+        spec = SCENARIO_MAP[scenario.value]
+        cache_key = (scenario.value, year)
+
+        if cache_key not in self._scenario_parameter_cache:
+            parameter_key = self._find_parameter_key(
+                model=spec["model"],
+                pathway=spec["pathway"],
+                year=year,
+            )
+            self._scenario_parameter_cache[cache_key] = parameter_key
+
+        parameter_key = self._scenario_parameter_cache[cache_key]
+
+        if parameter_key is None:
+            return
+
+        from bw2data.parameters import scenarios as bw_scenarios  # Lazy import to avoid BW dependency at module load time
+
+        try:
+            bw_scenarios[parameter_key].apply()
+        except KeyError as exc:  # pragma: no cover - defensive guard if BW state changes between runs
+            raise KeyError(
+                f"Premise scenario '{parameter_key}' not available in Brightway. "
+                "Rebuild the superstructure database before running LCA."
+            ) from exc
+
+    def _find_parameter_key(self, model: str, pathway: str, year: int) -> str:
+        """Return the Brightway parameter-set name for a Premise (model, pathway, year)."""
+        from bw2data.parameters import scenarios as bw_scenarios
+
+        model_lower = model.lower()
+        pathway_lower = pathway.lower()
+        year_str = str(year)
+
+        def _iter_items() -> Iterable[Tuple[str, object]]:
+            if hasattr(bw_scenarios, "items"):
+                try:
+                    return bw_scenarios.items()
+                except TypeError:
+                    pass
+            if hasattr(bw_scenarios, "data"):
+                return bw_scenarios.data.items()  # type: ignore[attr-defined]
+            if hasattr(bw_scenarios, "_data"):
+                return bw_scenarios._data.items()  # type: ignore[attr-defined]
+            if hasattr(bw_scenarios, "keys"):
+                return ((key, bw_scenarios[key]) for key in bw_scenarios.keys())
+            return []
+
+        for key, parameter in _iter_items():
+            haystack_parts = [str(key).lower()]
+            metadata = getattr(parameter, "metadata", None) or getattr(parameter, "meta", None)
+            if metadata:
+                if isinstance(metadata, dict):
+                    haystack_parts.append(" ".join(str(v).lower() for v in metadata.values()))
+                else:
+                    haystack_parts.append(str(metadata).lower())
+
+            haystack = " ".join(haystack_parts)
+
+            if all(needle in haystack for needle in (model_lower, pathway_lower, year_str)):
+                return str(key)
+
+        raise KeyError(
+            "Could not find a Premise scenario parameter set in Brightway "
+            f"for model='{model}', pathway='{pathway}', year={year}. "
+            "Ensure the superstructure database has been generated with matching configurations."
+        )
 
     def _read_inputs(self, route: Route, product: Product, year: int, scenario: Scenario):
         """Load inputs for route/product and filter MFA by year/scenario.
