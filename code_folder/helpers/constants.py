@@ -6,7 +6,7 @@ from pathlib import Path
 
 PROJECT_NAME = "premise"
 DATABASE_NAME = "batt_lci"
-ECOINVENT_NAME = "ecoinvent-3.12-cutoff"
+ECOINVENT_NAME = "ecoinvent-3.11-cutoff"
 BIOSPHERE_NAME = "biosphere3"
 
 class Route(Enum):

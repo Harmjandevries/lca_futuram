@@ -10,6 +10,7 @@ data/
 /dataSources/
 /dataSources.local.xml
 .env
+/export/
 .idea/
 code_folder/premise_setup.py
 data/input_data
@@ -22,3 +23,5 @@ code_folder/__pycache__/
 visualization
 code_folder/helpers/__pycache__
 .vscode
+export/
+export
