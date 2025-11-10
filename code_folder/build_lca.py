@@ -33,7 +33,7 @@ db = bd.Database(DATABASE_NAME)
 
 product_selection = [Product.WEEE_Cat6]
 route_selection = [Route.WEEE]
-year_selection = [2040]
+year_selection = [2020, 2035, 2050]
 scenario_selection = [Scenario.BAU]
 location_selection = [Location.EU27_4]
 

@@ -2,18 +2,18 @@ import os
 from typing import Dict, List
 import bw2data as bw
 from premise import NewDatabase  # type: ignore
-from helpers.constants import PROJECT_NAME, ECOINVENT_NAME
+from helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME
 
 
 SCENARIO_MAP: Dict[str, Dict[str, str]] = {
     # Adjust mappings as needed
     "BAU": {"model": "image", "pathway": "SSP2-L"},            # or "SSP2-Base"
-    "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
-    "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
+    # "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
+    # "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
 }
 
 
-YEARS: List[int] = [2020, 2030, 2040, 2050]
+YEARS: List[int] = [2020, 2035, 2050]
 
 
 def _derive_ecoinvent_version(db_name: str) -> str:
@@ -62,7 +62,7 @@ def build_superstructure_db() -> None:
     ndb.update()
 
     # Single superstructure database with scenario-difference file
-    super_name = f"ei_prem_super_{YEARS[0]}_{YEARS[-1]}"
+    super_name = SUPERSTRUCTURE_NAME
     ndb.write_superstructure_db_to_brightway(name=super_name)
 
 
