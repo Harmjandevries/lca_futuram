@@ -96,7 +96,6 @@ class LCABuilder:
         self._add_recovered_materials(
             lci_dict=lci_dict,
             lci_builder_df=lci_builder_df,
-            main_activity_id=main_activity_id,
             avoided_impacts_activity_id=avoided_impacts_activity_id,
             product_list=product_list,
             mfa_df=mfa_df,
@@ -177,24 +176,15 @@ class LCABuilder:
         lci_dict.update(avoided_impacts_dict)
         return avoided_impacts_activity_id, avoided_impacts_flow_name
 
-    def _add_recovered_materials(self, lci_dict: dict, lci_builder_df: pd.DataFrame, main_activity_id: str, avoided_impacts_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
-        """Add recovered material processes and their exchanges to main and avoided activities."""
+    def _add_recovered_materials(self, lci_dict: dict, lci_builder_df: pd.DataFrame, avoided_impacts_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
+        """Add recovered material exchanges to the avoided impacts activity."""
         output_recovered_material_rows = lci_builder_df[
             (lci_builder_df["Flow Direction"]=="recovered")
         ]
         for _, output_reco_row in output_recovered_material_rows.iterrows():
             material_list = [m.strip() for m in output_reco_row["Materials"].split(',')]
             flows_list = [m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',')]
-
-            process_name = output_reco_row['LCI Flow Name']
-            existing_id = BrightwayHelpers.get_existing_process_id_by_name(lcis=self.lcis, name=process_name)
             multiplier = self._get_recovery_multiplier(output_reco_row)
-
-            if existing_id:
-                process_id = existing_id
-            else:
-                process_id, process_dict = BrightwayHelpers.build_base_process(process_name)
-                lci_dict.update(process_dict)
 
             total_material = self.calculate_flow_amount(
                 mfa_df=mfa_df,
@@ -202,15 +192,6 @@ class LCABuilder:
                 product_list=product_list,
                 material_list=material_list,
                 layer=str(output_reco_row["Layer"]))  * multiplier
-            technosphere_exchange = BrightwayHelpers.build_technosphere_exchange(
-                name=output_reco_row["LCI Flow Name"],
-                process_id=process_id,
-                amount=-total_material / input_amount,
-            )
-            self._merge_exchange(
-                lci_dict[(DATABASE_NAME, main_activity_id)]["exchanges"],
-                technosphere_exchange,
-            )
 
             linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
@@ -224,7 +205,7 @@ class LCABuilder:
                 amount=total_material / input_amount,
                 flow_direction="output",
                 categories=tuple(map(str.strip, output_reco_row["Categories"].split(", "))),
-                unit = output_reco_row["Unit"],
+                unit=output_reco_row["Unit"],
             )
             self._merge_exchange(
                 lci_dict[(DATABASE_NAME, avoided_impacts_activity_id)]["exchanges"],
