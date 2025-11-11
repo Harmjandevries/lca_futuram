@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List
-from .constants import SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO
+from .constants import DATABASE_NAME, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
 import bw2data as bd
 import bw2calc as bc
 from .brightway_helpers import BrightwayHelpers
@@ -18,14 +18,21 @@ class LCABuilder:
     """
     def __init__(self):
         # Setup BW databases
-        self.ecoinvent = bd.Database(ECOINVENT_NAME)
+        user_input = input("Select database (1: Ecoinvent, 2: Superstructure): ")
+        if user_input == '1':
+            ecoinvent_database_name = ECOINVENT_NAME
+        else:
+            ecoinvent_database_name = SUPERSTRUCTURE_NAME
+
+
+        self.ecoinvent = bd.Database(ecoinvent_database_name)
+        self.database = bd.Database(DATABASE_NAME)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
 
         self.lcis: List[SingleLCI] = []
         self.lcia_results: List[SingleLCIAResult] = []
 
     def build_all_lcis(self,
-                       database: bd.Database,
                        route_selection:List[Route],
                        product_selection: List[Product],
                        year_selection=List[int],
@@ -43,7 +50,7 @@ class LCABuilder:
                         (scenario in [Scenario.BAU, Scenario.CIR, Scenario.REC] and year not in SUPPORTED_YEARS_SCENARIO):
                             continue
                         for location in location_selection:
-                            lci = self.build_lci(database=database, route=route, product=product, year=year, scenario=scenario, location=location)
+                            lci = self.build_lci(route=route, product=product, year=year, scenario=scenario, location=location)
                             if lci:
                                 self.lcis.append(lci)
                                 print(f"Finished LCI for route: {route.value}, scenario: {scenario.value}, product: {product.value}, year: {year}, location: {location.value}")
@@ -51,20 +58,17 @@ class LCABuilder:
 
         # Adds all the lci_dict together in a big dict
         big_dict = {k: v for lci in self.lcis for k, v in lci.lci_dict.items()}
-        database.write(big_dict)
+        self.database.write(big_dict)
 
-    def build_lci(self, database: bd.Database, route:Route, product:Product, year: int, scenario:Scenario, location:Location):
+    def build_lci(self, route:Route, product:Product, year: int, scenario:Scenario, location:Location):
         """Build a single LCI for a specific (route, product, year, scenario, location)."""
         mfa_df, lci_builder_df = self._read_inputs(route=route, product=product, year=year, scenario=scenario)
         if lci_builder_df is None:
             return
 
         lci_dict = {}
-        output_amounts_alloy = {}
-        output_amounts_element = {}
 
         main_activity_id, main_activity_flow_name, input_amount, product_list = self._build_main_activity(
-            database=database,
             lci_dict=lci_dict,
             lci_builder_df=lci_builder_df,
             route=route,
@@ -82,7 +86,6 @@ class LCABuilder:
             )
 
         avoided_impacts_activity_id, avoided_impacts_flow_name = self._build_avoided_activity(
-            database=database,
             lci_dict=lci_dict,
             lci_builder_df=lci_builder_df,
             route=route,
@@ -91,7 +94,6 @@ class LCABuilder:
         )
 
         self._add_recovered_materials(
-            database=database,
             lci_dict=lci_dict,
             lci_builder_df=lci_builder_df,
             main_activity_id=main_activity_id,
@@ -99,12 +101,9 @@ class LCABuilder:
             product_list=product_list,
             mfa_df=mfa_df,
             input_amount=input_amount,
-            output_amounts_alloy=output_amounts_alloy,
-            output_amounts_element=output_amounts_element,
         )
 
         self._add_external_exchanges(
-            database=database,
             lci_dict=lci_dict,
             lci_builder_df=lci_builder_df,
             main_activity_id=main_activity_id,
@@ -122,9 +121,7 @@ class LCABuilder:
             year=year,
             location=location,
             lci_dict=lci_dict,
-            total_inflow_amount=input_amount,
-            output_amounts_alloy=output_amounts_alloy,
-            output_amounts_element=output_amounts_element)
+            total_inflow_amount=input_amount)
 
     def _read_inputs(self, route: Route, product: Product, year: int, scenario: Scenario):
         """Load inputs for route/product and filter MFA by year/scenario.
@@ -149,7 +146,7 @@ class LCABuilder:
         ]
         return mfa_df, lci_builder_df
 
-    def _build_main_activity(self, database: bd.Database, lci_dict: dict, lci_builder_df: pd.DataFrame, route: Route, year: int, scenario: Scenario, mfa_df: pd.DataFrame):
+    def _build_main_activity(self,  lci_dict: dict, lci_builder_df: pd.DataFrame, route: Route, year: int, scenario: Scenario, mfa_df: pd.DataFrame):
         """Create the main activity and compute total inflow amount.
 
         Returns (main_activity_id, main_activity_flow_name, input_amount, product_list).
@@ -166,7 +163,7 @@ class LCABuilder:
         input_amount = self.calculate_flow_amount(mfa_df=mfa_df, flows_list=input_flow_ids, product_list=product_list, layer="")
         return main_activity_id, main_activity_flow_name, input_amount, product_list
 
-    def _build_avoided_activity(self, database: bd.Database, lci_dict: dict, lci_builder_df: pd.DataFrame, route: Route, year: int, scenario: Scenario):
+    def _build_avoided_activity(self, lci_dict: dict, lci_builder_df: pd.DataFrame, route: Route, year: int, scenario: Scenario):
         """Create the avoided impacts activity.
 
         Returns (avoided_impacts_activity_id, avoided_impacts_flow_name).
@@ -180,7 +177,7 @@ class LCABuilder:
         lci_dict.update(avoided_impacts_dict)
         return avoided_impacts_activity_id, avoided_impacts_flow_name
 
-    def _add_recovered_materials(self, database: bd.Database, lci_dict: dict, lci_builder_df: pd.DataFrame, main_activity_id: str, avoided_impacts_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float, output_amounts_alloy: dict, output_amounts_element: dict) -> None:
+    def _add_recovered_materials(self, lci_dict: dict, lci_builder_df: pd.DataFrame, main_activity_id: str, avoided_impacts_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
         """Add recovered material processes and their exchanges to main and avoided activities."""
         output_recovered_material_rows = lci_builder_df[
             (lci_builder_df["Flow Direction"]=="recovered")
@@ -211,18 +208,9 @@ class LCABuilder:
                 amount=-total_material / input_amount,
             )
             self._merge_exchange(
-                lci_dict[(database.name, main_activity_id)]["exchanges"],
+                lci_dict[(DATABASE_NAME, main_activity_id)]["exchanges"],
                 technosphere_exchange,
             )
-            output_amounts_alloy[output_reco_row['LCI Flow Name']] = total_material / input_amount
-            for i in range(0, len(material_list)):
-                material = material_list[i]
-                layer = output_reco_row["Layer"].split(",")[i] if "," in output_reco_row["Layer"] else output_reco_row["Layer"]
-                amount = self.calculate_flow_amount(mfa_df=mfa_df, flows_list=flows_list, product_list=product_list, material_list=[material],layer=layer) * multiplier
-                if material not in output_amounts_element:
-                    output_amounts_element[material] = amount / input_amount
-                else:
-                    output_amounts_element[material] += amount / input_amount
 
             linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
@@ -239,11 +227,11 @@ class LCABuilder:
                 unit = output_reco_row["Unit"],
             )
             self._merge_exchange(
-                lci_dict[(database.name, avoided_impacts_activity_id)]["exchanges"],
+                lci_dict[(DATABASE_NAME, avoided_impacts_activity_id)]["exchanges"],
                 avoided_impact_exchange,
             )
 
-    def _add_external_exchanges(self, database: bd.Database, lci_dict: dict, lci_builder_df: pd.DataFrame, main_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
+    def _add_external_exchanges(self, lci_dict: dict, lci_builder_df: pd.DataFrame, main_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
         """Add external exchanges (ecoinvent/biosphere) to the main activity."""
         external_activity_rows = lci_builder_df[(lci_builder_df['Linked process']!='')&(lci_builder_df['Flow Direction']!="recovered")]
         for _, external_row in external_activity_rows.iterrows():
@@ -283,7 +271,7 @@ class LCABuilder:
                 categories=tuple(map(str.strip, external_row["Categories"].split(", ")))
             )
             self._merge_exchange(
-                lci_dict[(database.name, main_activity_id)]["exchanges"],
+                lci_dict[(DATABASE_NAME, main_activity_id)]["exchanges"],
                 external_exchange,
             )
 
@@ -339,21 +327,21 @@ class LCABuilder:
                 ]["Value"].sum()
         return amount
 
-    def run_lcia(self, database: bd.Database, lcia_method):
+    def run_lcia(self, lcia_method):
         """Compute LCIA for all built LCIs and store results in memory."""
         for lci in self.lcis:
-            lcia_result = self.compute_lcia_for_lci(database=database, lcia_method=lcia_method, lci=lci)
+            lcia_result = self.compute_lcia_for_lci(database=self.database, lcia_method=lcia_method, lci=lci)
             self.lcia_results.append(lcia_result)
 
-    def compute_lcia_for_lci(self, database: bd.Database, lcia_method: tuple, lci: SingleLCI):
+    def compute_lcia_for_lci(self, lcia_method: tuple, lci: SingleLCI):
         """Compute LCIA for a single LCI, returning a SingleLCIAResult."""
-        functional_unit = {next((act for act in database if lci.main_activity_flow_name == act["name"].lower())): -1}
+        functional_unit = {next((act for act in self.database if lci.main_activity_flow_name == act["name"].lower())): -1}
         lca = bc.LCA(functional_unit, lcia_method)
         lca.lci()
         lca.lcia()
         total_impact = lca.score
 
-        functional_unit_avoided_impact = {next((act for act in database if lci.avoided_impacts_flow_name == act["name"].lower())): -1}
+        functional_unit_avoided_impact = {next((act for act in self.database if lci.avoided_impacts_flow_name == act["name"].lower())): -1}
         lca = bc.LCA(functional_unit_avoided_impact, lcia_method)
         lca.lci()
         lca.lcia()
@@ -365,15 +353,15 @@ class LCABuilder:
         """Persist built LCIs to a timestamped pickle file."""
         StorageHelper.save_lcis(self.lcis)
 
-    def load_latest_lcis(self, database: bd.Database):
+    def load_latest_lcis(self):
         """Load the latest saved LCIs and write their processes to the database."""
         self.lcis = StorageHelper.load_latest_lcis()
         big_dict = {k: v for lci in self.lcis for k, v in lci.lci_dict.items()}
-        database.write(big_dict)
+        self.database.write(big_dict)
 
-    def save_database_to_excel(self, database: bd.Database):
+    def save_database_to_excel(self):
         """Export the current database to an Excel file in output_data."""
-        StorageHelper.save_database_to_excel(database)
+        StorageHelper.save_database_to_excel(self.database)
 
     def save_lcia_results(self):
         """Persist LCIA results to a timestamped pickle file."""

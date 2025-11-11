@@ -25,3 +25,5 @@ code_folder/helpers/__pycache__
 .vscode
 export/
 export
+unlinked.log
+missing_classifications.csv

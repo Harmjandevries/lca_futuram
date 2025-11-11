@@ -31,8 +31,8 @@ db = bd.Database(DATABASE_NAME)
 # scenario_selection = [Scenario.BAU, Scenario.REC, Scenario.CIR]
 # location_selection = [Location.EU27_4]
 
-product_selection = [Product.WEEE_Cat6]
-route_selection = [Route.WEEE]
+product_selection = [Product.battLiNMC111]
+route_selection = [Route.PYRO_HYDRO_PRETREATMENT]
 year_selection = [2020, 2035, 2050]
 scenario_selection = [Scenario.BAU]
 location_selection = [Location.EU27_4]
