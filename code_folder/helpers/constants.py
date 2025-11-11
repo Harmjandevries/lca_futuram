@@ -89,7 +89,7 @@ class SingleLCI:
     
     lci_dict: dict # lci for the impacts of the recycling process
     main_activity_flow_name: str # name of the recycled material inflow to the lci_dict
-    avoided_impacts_flow_name: str # LCI name of the recovered materials process
+    avoided_impacts_flow_name: str # LCI name of the avoided impacts activity
     total_inflow_amount: int #total amount of recycled material, (we need to multiply the impacts with this, to get total impact)
 
 @dataclass

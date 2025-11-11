@@ -1,33 +1,9 @@
-from typing import Optional, List
-from .constants import SingleLCI
 import uuid
+from typing import Optional
 from .constants import ExternalDatabase, DATABASE_NAME
 import bw2data as bd
 
 class BrightwayHelpers:
-    @staticmethod
-    def get_existing_process_id_by_name(lcis: List[SingleLCI], name: str) -> Optional[str]:
-        """Return process UUID if a process with given name exists in any LCI, else None."""
-        normalized_name = name.strip().lower()
-
-        for lci in lcis:
-            for (db_name, process_id), process_data in lci.lci_dict.items():
-                if process_data["name"].strip().lower() == normalized_name:
-                    return process_id  # This is the UUID you want
-        return None
-    
-    @staticmethod
-    def build_technosphere_exchange(name: str, process_id: str, amount: float):
-        """Create a technosphere exchange pointing to a process in our database."""
-        return {
-            "input": (DATABASE_NAME, process_id),
-            "name": name,
-            "amount": amount,
-            "unit": "kilogram",
-            "type": "technosphere",
-            "location": "RER"
-        }
-    
     @staticmethod
     def build_base_process(name: str, is_waste: Optional[bool] = False):
         """Create a minimal Brightway process with a production exchange.
