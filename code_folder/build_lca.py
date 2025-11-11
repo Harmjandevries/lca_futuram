@@ -42,7 +42,6 @@ lcia_method = ('CML v4.8 2016', 'climate change', 'global warming potential (GWP
 
 lca_builder = LCABuilder()
 lca_builder.build_all_lcis(
-    database=db,
     product_selection=product_selection,
     route_selection=route_selection,
     year_selection=year_selection,
@@ -53,6 +52,6 @@ lca_builder.save_lcis()
 lca_builder.save_database_to_excel(database=db)
 
 
-lca_builder.run_lcia(database=db, lcia_method=lcia_method)
+lca_builder.run_lcia(lcia_method=lcia_method)
 print(lca_builder.lcia_results)
 lca_builder.save_lcia_results()
