@@ -1,10 +1,10 @@
 import pandas as pd
 from typing import List
-from .constants import DATABASE_NAME, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
+from code_folder.helpers.constants import SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
 import bw2data as bd
 import bw2calc as bc
-from .brightway_helpers import BrightwayHelpers
-from .storage_helper import StorageHelper
+from code_folder.helpers.brightway_helpers import BrightwayHelpers
+from code_folder.helpers.storage_helper import StorageHelper
 
 
 class LCABuilder:
@@ -16,7 +16,7 @@ class LCABuilder:
     - Building Brightway processes and exchanges
     - Running LCIA and persisting results
     """
-    def __init__(self):
+    def __init__(self, database_name: str):
         # Setup BW databases
         user_input = input("Select database (1: Ecoinvent, 2: Superstructure): ")
         if user_input == '1':
@@ -26,7 +26,8 @@ class LCABuilder:
 
 
         self.ecoinvent = bd.Database(ecoinvent_database_name)
-        self.database = bd.Database(DATABASE_NAME)
+        self.database_name = database_name
+        self.database = bd.Database(database_name)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
 
         self.lcis: List[SingleLCI] = []
@@ -78,12 +79,13 @@ class LCABuilder:
         )
 
         if input_amount == 0:
-            raise ValueError(
+            print(
                 "No inflow amount found for the specified configuration. "
                 f"route={route.value}, product={product.value}, year={year}, "
                 f"scenario={scenario.value}, location={location.value}. "
                 "Check rm_output.csv and lci_builder.xlsx inputs."
             )
+            return
 
         avoided_impacts_activity_id, avoided_impacts_flow_name = self._build_avoided_activity(
             lci_dict=lci_dict,
@@ -154,6 +156,7 @@ class LCABuilder:
         main_activity_flow_name = f"{route_lci_names[route]} {main_activity_row['LCI Flow Name'].iloc[0]} - {year} - {scenario.value}".lower()
         main_activity_id, main_activity_dict = BrightwayHelpers.build_base_process(
             name=main_activity_flow_name,
+            database_name=self.database_name,
             is_waste=True
         )
         lci_dict.update(main_activity_dict)
@@ -171,6 +174,7 @@ class LCABuilder:
         avoided_impacts_flow_name =  f"avoided impacts for {route_lci_names[route]} {main_activity_row['LCI Flow Name'].iloc[0]} - {year} - {scenario.value}".lower()
         avoided_impacts_activity_id, avoided_impacts_dict = BrightwayHelpers.build_base_process(
             name=avoided_impacts_flow_name,
+            database_name=self.database_name,
             is_waste=False
         )
         lci_dict.update(avoided_impacts_dict)
@@ -179,8 +183,9 @@ class LCABuilder:
     def _add_recovered_materials(self, lci_dict: dict, lci_builder_df: pd.DataFrame, avoided_impacts_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
         """Add recovered material exchanges to the avoided impacts activity."""
         output_recovered_material_rows = lci_builder_df[
-            (lci_builder_df["Flow Direction"]=="recovered")
-        ]
+    (lci_builder_df["Flow Direction"] == "recovered") |
+    (lci_builder_df["LCI Flow Type"] == "recovered")
+]
         for _, output_reco_row in output_recovered_material_rows.iterrows():
             material_list = [m.strip() for m in output_reco_row["Materials"].split(',')]
             flows_list = [m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',')]
@@ -208,13 +213,13 @@ class LCABuilder:
                 unit=output_reco_row["Unit"],
             )
             self._merge_exchange(
-                lci_dict[(DATABASE_NAME, avoided_impacts_activity_id)]["exchanges"],
+                lci_dict[(self.database_name, avoided_impacts_activity_id)]["exchanges"],
                 avoided_impact_exchange,
             )
 
     def _add_external_exchanges(self, lci_dict: dict, lci_builder_df: pd.DataFrame, main_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
         """Add external exchanges (ecoinvent/biosphere) to the main activity."""
-        external_activity_rows = lci_builder_df[(lci_builder_df['Linked process']!='')&(lci_builder_df['Flow Direction']!="recovered")]
+        external_activity_rows = lci_builder_df[(lci_builder_df['Linked process']!='')&(lci_builder_df['Flow Direction']!="recovered")&(lci_builder_df['LCI Flow Type']!="recovered")]
         for _, external_row in external_activity_rows.iterrows():
             if external_row['Stock/Flow IDs']:
                 total_flow = self.calculate_flow_amount(
@@ -252,7 +257,7 @@ class LCABuilder:
                 categories=tuple(map(str.strip, external_row["Categories"].split(", ")))
             )
             self._merge_exchange(
-                lci_dict[(DATABASE_NAME, main_activity_id)]["exchanges"],
+                lci_dict[(self.database_name, main_activity_id)]["exchanges"],
                 external_exchange,
             )
 
@@ -311,7 +316,7 @@ class LCABuilder:
     def run_lcia(self, lcia_method):
         """Compute LCIA for all built LCIs and store results in memory."""
         for lci in self.lcis:
-            lcia_result = self.compute_lcia_for_lci(database=self.database, lcia_method=lcia_method, lci=lci)
+            lcia_result = self.compute_lcia_for_lci(lcia_method=lcia_method, lci=lci)
             self.lcia_results.append(lcia_result)
 
     def compute_lcia_for_lci(self, lcia_method: tuple, lci: SingleLCI):
@@ -373,6 +378,6 @@ class LCABuilder:
             except (TypeError, ValueError) as exc:
                 raise ValueError(f"Invalid numeric value '{value}' in recovery configuration") from exc
 
-        unit_conversion = _parse(row.get("Unit conversion", 1.0))
+        unit_conversion = _parse(row.get("Weight per unit", 1.0))
         recovery_efficiency = _parse(row.get("Recovery efficiency", 1.0))
-        return unit_conversion * recovery_efficiency
+        return recovery_efficiency / unit_conversion

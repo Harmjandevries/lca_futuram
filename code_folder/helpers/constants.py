@@ -5,15 +5,16 @@ from dataclasses import dataclass
 from pathlib import Path
 
 PROJECT_NAME = "premise"
-DATABASE_NAME = "batt_lci"
 ECOINVENT_NAME = "ecoinvent-3.11-cutoff"
 SUPERSTRUCTURE_NAME = "scenario_superstructure"
 BIOSPHERE_NAME = "biosphere3"
 
 class Route(Enum):
     PYRO_HYDRO = "BATT_LIBToPyro1"
+    ELV = "ELV"
     PYRO_HYDRO_PRETREATMENT = "BATT_LIBToPyrolysis4"
     HYDRO = "Batt_LIBToPyrolysis2"
+    DIRECT = "BATT_LIBToDirectRecycling"
     BATT_NiCdSorted = "BATT_NiCdSorted"
     BATT_LeadAcidSorted = "BATT_LeadAcidSorted"
     BATT_ZnAlkaliSorted = "BATT_ZnAlkaliSorted"
@@ -27,6 +28,8 @@ class Product(Enum):
     BattNiMH = "battNiMH"
     BattNiCd = "battNiCd"
     battLiNMC111 = "battLiNMC111"
+    battLiCO_subsub = "battLiCO_subsub"
+    battLiMO_subsub = "battLiMO_subsub"
     battLiNMC811 = "battLiNMC811"
     battLiFP_subsub = "battLiFP_subsub"
     battLiNCA_subsub = "battLiNCA_subsub"
@@ -38,6 +41,13 @@ class Product(Enum):
     WEEE_Cat4c = "WEEE_Cat4c"
     WEEE_Cat5 = "WEEE_Cat5"
     WEEE_Cat6 = "WEEE_Cat6"
+    elvBEV = "elvBEV"
+    elvDiesel = "elvDiesel"
+    elvHEV = "elvHEV"
+    elvLPG = "elvLPG"
+    elvNG = "elvNG"
+    elvOther = "elvOther" 
+    elvPetrol = "elvPetrol"
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -75,7 +85,9 @@ route_lci_names = {
     Route.BATT_NiCdSorted: "Recycling of",
     Route.BATT_ZnAlkaliSorted: "Recycling of",
     Route.HYDRO: "Hydrometallurgical recycling of",
-    Route.WEEE: "Shredding of "
+    Route.WEEE: "Dismantling and shredding of ",
+    Route.DIRECT: "Direct recycling of ",
+    Route.ELV: "Dismantling and shredding of "
 }
 
 @dataclass

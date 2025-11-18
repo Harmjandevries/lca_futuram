@@ -1,6 +1,6 @@
 from datetime import datetime
 import pickle
-from .constants import LOADABLE_LCI_DATA_FOLDER, BW_FORMAT_LCIS_DATA_FOLDER, LOADABLE_LCIA_RESULTS_DATA_FOLDER
+from code_folder.helpers.constants import LOADABLE_LCI_DATA_FOLDER, BW_FORMAT_LCIS_DATA_FOLDER, LOADABLE_LCIA_RESULTS_DATA_FOLDER
 from bw2io.export.excel import write_lci_excel
 import os
 import shutil

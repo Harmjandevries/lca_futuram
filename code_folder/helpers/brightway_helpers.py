@@ -1,25 +1,25 @@
 import uuid
 from typing import Optional
-from .constants import ExternalDatabase, DATABASE_NAME
+from code_folder.helpers.constants import ExternalDatabase
 import bw2data as bd
 
 class BrightwayHelpers:
     @staticmethod
-    def build_base_process(name: str, is_waste: Optional[bool] = False):
+    def build_base_process(name: str, database_name: str, is_waste: Optional[bool] = False):
         """Create a minimal Brightway process with a production exchange.
 
         Returns (process_id, process_dict_fragment) suitable for Database.write.
         """
         process_id = str(uuid.uuid4())
         return process_id, {
-            (DATABASE_NAME, process_id): {
+            (database_name, process_id): {
                 "name": name,
                 "unit": "kilogram",
                 "location": "RER",
                 "reference product": name,
                 "exchanges": [
                     {
-                        "input": (DATABASE_NAME, process_id),
+                        "input": (database_name, process_id),
                         "name": name,
                         "amount": 1 if not is_waste else -1,
                         "unit": "kilogram",
@@ -59,7 +59,7 @@ class BrightwayHelpers:
     def find_biosphere_key_by_name(name, biosphere: bd.Database, categories=("air", "urban air close to ground")):
         """Find (database_name, code) for a biosphere flow by exact name and categories."""
         for flow in biosphere:
-            if flow["name"] == name and tuple(flow["categories"]) == categories:
+            if flow["name"].strip() == name.strip() and tuple(flow["categories"]) == categories:
                 # Use the actual database name for biosphere
                 return (biosphere.name, flow["code"])
         raise ValueError(f"Biosphere flow not found: {name} @ {categories}")

@@ -2,7 +2,7 @@ import os
 from typing import Dict, List
 import bw2data as bw
 from premise import NewDatabase  # type: ignore
-from helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME
+from code_folder.helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME
 
 
 SCENARIO_MAP: Dict[str, Dict[str, str]] = {
@@ -13,7 +13,7 @@ SCENARIO_MAP: Dict[str, Dict[str, str]] = {
 }
 
 
-YEARS: List[int] = [2020, 2035, 2050]
+YEARS: List[int] = [2020, 2030, 2040, 2050]
 
 
 def _derive_ecoinvent_version(db_name: str) -> str:
