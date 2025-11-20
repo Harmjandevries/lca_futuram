@@ -18,6 +18,7 @@ class Route(Enum):
     BATT_NiCdSorted = "BATT_NiCdSorted"
     BATT_LeadAcidSorted = "BATT_LeadAcidSorted"
     BATT_ZnAlkaliSorted = "BATT_ZnAlkaliSorted"
+    BATT_EVInspectedReuse = "BATT_EVInspectedReuse"
     BATT_NiMHSorted = "BATT_NiMHSorted"
     WEEE = "WEEE"
 
@@ -84,6 +85,7 @@ route_lci_names = {
     Route.BATT_NiMHSorted: "Recycling of",
     Route.BATT_NiCdSorted: "Recycling of",
     Route.BATT_ZnAlkaliSorted: "Recycling of",
+    Route.BATT_EVInspectedReuse: "Refurbishment of ",
     Route.HYDRO: "Hydrometallurgical recycling of",
     Route.WEEE: "Dismantling and shredding of ",
     Route.DIRECT: "Direct recycling of ",

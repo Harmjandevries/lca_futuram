@@ -236,7 +236,7 @@ class LCABuilder:
                     flows_list=scaled_by_flows,
                     product_list=product_list,
                     )/input_amount
-                if "Element to compound ratio" in external_row:
+                if "Element to compound ratio" in external_row and not external_row["Element to compound ratio"]=="":
                     element_to_compound_ratio = float(external_row["Element to compound ratio"])
                 else:
                     element_to_compound_ratio = 1

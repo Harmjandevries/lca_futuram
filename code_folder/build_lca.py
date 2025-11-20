@@ -18,11 +18,13 @@ from code_folder.helpers.constants import Product, Route, Scenario, Location, PR
 def main():
     bd.projects.set_current(PROJECT_NAME)
 
-    database_name = "elv"
-    PRODUCT_SELECTION = [Product.elvBEV, Product.elvDiesel, Product.elvHEV, Product.elvLPG, Product.elvNG, Product.elvOther, Product.elvPetrol]
-    ROUTE_SELECTION = [Route.ELV]
-    YEAR_SELECTION = [2020, 2030, 2040, 2050]
-    SCENARIO_SELECTION = [Scenario.OBS, Scenario.BAU]
+    database_name = "batt"
+    PRODUCT_SELECTION = [Product.battLiNMC111]
+    # Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb, Product.BattZn]
+    ROUTE_SELECTION = [Route.BATT_EVInspectedReuse,]
+    #  Route.BATT_LeadAcidSorted, Route.BATT_ZnAlkaliSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
+    YEAR_SELECTION = [2050]
+    SCENARIO_SELECTION = [Scenario.CIR]
     LOCATION_SELECTION = [Location.EU27_4]
 
     # If a previous version of the database exists, remove it completely
