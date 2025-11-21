@@ -19,12 +19,10 @@ def main():
     bd.projects.set_current(PROJECT_NAME)
 
     database_name = "batt"
-    PRODUCT_SELECTION = [Product.battLiNMC111]
-    # Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb, Product.BattZn]
-    ROUTE_SELECTION = [Route.BATT_EVInspectedReuse,]
-    #  Route.BATT_LeadAcidSorted, Route.BATT_ZnAlkaliSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
-    YEAR_SELECTION = [2050]
-    SCENARIO_SELECTION = [Scenario.CIR]
+    PRODUCT_SELECTION = [Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb, Product.BattZn]
+    ROUTE_SELECTION = [Route.BATT_EVInspectedReuse, Route.BATT_LeadAcidSorted, Route.BATT_ZnAlkaliSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
+    YEAR_SELECTION = [2010, 2015, 2020, 2025, 2030, 2035, 2040, 2045, 2050]
+    SCENARIO_SELECTION = [Scenario.CIR, Scenario.OBS, Scenario.BAU, Scenario.REC]
     LOCATION_SELECTION = [Location.EU27_4]
 
     # If a previous version of the database exists, remove it completely

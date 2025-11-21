@@ -187,16 +187,22 @@ class LCABuilder:
     (lci_builder_df["LCI Flow Type"] == "recovered")
 ]
         for _, output_reco_row in output_recovered_material_rows.iterrows():
-            material_list = [m.strip() for m in output_reco_row["Materials"].split(',')]
-            flows_list = [m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',')]
+            material_list = [m.strip() for m in output_reco_row["Materials"].split(',') if m.strip()]
+            flows_list = [m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',') if m.strip()]
             multiplier = self._get_recovery_multiplier(output_reco_row)
 
-            total_material = self.calculate_flow_amount(
-                mfa_df=mfa_df,
-                flows_list=flows_list,
-                product_list=product_list,
-                material_list=material_list,
-                layer=str(output_reco_row["Layer"]))  * multiplier
+            if flows_list:
+                total_material = self.calculate_flow_amount(
+                    mfa_df=mfa_df,
+                    flows_list=flows_list,
+                    product_list=product_list,
+                    material_list=material_list,
+                    layer=str(output_reco_row["Layer"])) * multiplier
+                amount_per_unit = total_material / input_amount
+            elif output_reco_row.get("Amount") != "":
+                amount_per_unit = float(output_reco_row["Amount"]) * multiplier
+            else:
+                continue
 
             linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
@@ -207,7 +213,7 @@ class LCABuilder:
                 biosphere=self.biosphere,
                 process_name=linked_process_name,
                 location=output_reco_row["Region"] if output_reco_row["Region"] else "RER",
-                amount=total_material / input_amount,
+                amount=amount_per_unit,
                 flow_direction="output",
                 categories=tuple(map(str.strip, output_reco_row["Categories"].split(", "))),
                 unit=output_reco_row["Unit"],
