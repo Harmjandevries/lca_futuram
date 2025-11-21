@@ -207,6 +207,8 @@ class LCABuilder:
             linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
 
+            reference_product = output_reco_row.get("LCI Flow Name", "") or None
+
             avoided_impact_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
                 ecoinvent=self.ecoinvent,
@@ -217,6 +219,7 @@ class LCABuilder:
                 flow_direction="output",
                 categories=tuple(map(str.strip, output_reco_row["Categories"].split(", "))),
                 unit=output_reco_row["Unit"],
+                reference_product=reference_product if linked_process_database == ExternalDatabase.ECOINVENT else None,
             )
             self._merge_exchange(
                 lci_dict[(self.database_name, avoided_impacts_activity_id)]["exchanges"],
@@ -251,6 +254,8 @@ class LCABuilder:
                 amount = external_row['Amount']
             linked_process_database, linked_process_name = tuple(external_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
+
+            reference_product = external_row.get("LCI Flow Name", "") or None
             external_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
                 ecoinvent=self.ecoinvent,
@@ -260,7 +265,8 @@ class LCABuilder:
                 amount=amount,
                 unit=external_row["Unit"],
                 flow_direction=external_row["Flow Direction"],
-                categories=tuple(map(str.strip, external_row["Categories"].split(", ")))
+                categories=tuple(map(str.strip, external_row["Categories"].split(", "))),
+                reference_product=reference_product if linked_process_database == ExternalDatabase.ECOINVENT else None,
             )
             self._merge_exchange(
                 lci_dict[(self.database_name, main_activity_id)]["exchanges"],
