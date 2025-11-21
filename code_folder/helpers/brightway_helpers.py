@@ -30,30 +30,71 @@ class BrightwayHelpers:
         }
     
     @staticmethod
-    def build_external_exchange(database: ExternalDatabase, biosphere: bd.Database, ecoinvent: bd.Database, process_name: str, amount: float, unit: str, flow_direction:str, location: str, categories: tuple):
+    def build_external_exchange(
+        database: ExternalDatabase,
+        biosphere: bd.Database,
+        ecoinvent: bd.Database,
+        process_name: str,
+        amount: float,
+        unit: str,
+        flow_direction: str,
+        location: str,
+        categories: tuple,
+        reference_product: Optional[str] = None,
+    ):
         """Create an exchange to an external database (ecoinvent/biosphere) with correct sign/type."""
         # Database can be ecoinvent or biosphere
-        if database==ExternalDatabase.ECOINVENT:
-            input = BrightwayHelpers.find_ecoinvent_key_by_name(name=process_name, ecoinvent=ecoinvent, location=location)
-        if database==ExternalDatabase.BIOSPHERE:
+        if database == ExternalDatabase.ECOINVENT:
+            input = BrightwayHelpers.find_ecoinvent_key_by_name(
+                name=process_name,
+                ecoinvent=ecoinvent,
+                location=location,
+                reference_product=reference_product,
+            )
+        if database == ExternalDatabase.BIOSPHERE:
             input = BrightwayHelpers.find_biosphere_key_by_name(name=process_name, biosphere=biosphere, categories=categories)
         return {
         "input": input,
         "name": process_name,
-        "amount": amount * (1 if database==ExternalDatabase.ECOINVENT else -1) * (1 if flow_direction=='input' else -1),
+        "amount": amount * (1 if database == ExternalDatabase.ECOINVENT else -1) * (1 if flow_direction == "input" else -1),
         "unit": unit,
-        "type": "technosphere" if database==ExternalDatabase.ECOINVENT else "biosphere",
+        "type": "technosphere" if database == ExternalDatabase.ECOINVENT else "biosphere",
         "location": location
     }
 
     @staticmethod
-    def find_ecoinvent_key_by_name(name, ecoinvent: bd.Database, location):
-        """Find (database_name, code) for an ecoinvent activity by exact name and location."""
-        for act in ecoinvent:
-            if act["name"].strip() == name.strip() and act.get("location", "").strip() == location.strip():
-                # Use the actual database name and a 2-tuple key as required by Brightway
-                return (ecoinvent.name, act["code"])
-        raise ValueError(f"Process not found: {name} @ {location}")
+    def find_ecoinvent_key_by_name(name, ecoinvent: bd.Database, location, reference_product: Optional[str] = None):
+        """Find (database_name, code) for an ecoinvent activity by exact name/location and optional reference product."""
+        matches = [
+            act for act in ecoinvent
+            if act["name"].strip() == name.strip() and act.get("location", "").strip() == location.strip()
+        ]
+
+        if not matches:
+            raise ValueError(f"Process not found: {name} @ {location}")
+
+        if reference_product:
+            filtered = [
+                act for act in matches
+                if str(act.get("reference product", "")).strip() == reference_product.strip()
+            ]
+            if filtered:
+                matches = filtered
+            else:
+                available = ", ".join(sorted({str(act.get("reference product", "")) for act in matches}))
+                raise ValueError(
+                    f"Process not found: {name} @ {location} with reference product '{reference_product}'. "
+                    f"Available reference products: {available}"
+                )
+
+        if len(matches) == 1:
+            act = matches[0]
+            return (ecoinvent.name, act["code"])
+
+        raise ValueError(
+            f"Multiple processes found for {name} @ {location}. "
+            "Provide a reference product to disambiguate."
+        )
     
     @staticmethod
     def find_biosphere_key_by_name(name, biosphere: bd.Database, categories=("air", "urban air close to ground")):
