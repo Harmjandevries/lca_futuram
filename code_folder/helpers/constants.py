@@ -20,6 +20,7 @@ class Route(Enum):
     BATT_ZnAlkaliSorted = "BATT_ZnAlkaliSorted"
     BATT_EVInspectedReuse = "BATT_EVInspectedReuse"
     BATT_NiMHSorted = "BATT_NiMHSorted"
+    BATT_2RM_dismantlingToSmelter = "BATT_2RM_dismantlingToSmelter"
     WEEE = "WEEE"
 
 
@@ -34,6 +35,7 @@ class Product(Enum):
     battLiNMC811 = "battLiNMC811"
     battLiFP_subsub = "battLiFP_subsub"
     battLiNCA_subsub = "battLiNCA_subsub"
+    battPackXEV = "battPackXEV"	
     WEEE_Cat1 = "WEEE_Cat1"
     WEEE_Cat2 = "WEEE_Cat2"
     WEEE_Cat3 = "WEEE_Cat3"
@@ -89,7 +91,8 @@ route_lci_names = {
     Route.HYDRO: "Hydrometallurgical recycling of",
     Route.WEEE: "Dismantling and shredding of ",
     Route.DIRECT: "Direct recycling of ",
-    Route.ELV: "Dismantling and shredding of "
+    Route.ELV: "Dismantling and shredding of ",
+    Route.BATT_2RM_dismantlingToSmelter: "Dismantling and shredding of "
 }
 
 @dataclass

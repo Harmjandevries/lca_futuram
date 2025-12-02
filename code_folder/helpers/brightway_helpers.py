@@ -73,7 +73,7 @@ class BrightwayHelpers:
         if not matches:
             raise ValueError(f"Process not found: {name} @ {location}")
 
-        if reference_product:
+        if len(matches)>1:
             filtered = [
                 act for act in matches
                 if str(act.get("reference product", "")).strip() == reference_product.strip()
