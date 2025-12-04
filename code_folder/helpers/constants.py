@@ -55,6 +55,7 @@ class Product(Enum):
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_FOLDER = PROJECT_ROOT / "data"
+SCRAP_PROCESSES_FILE = PROJECT_ROOT / "data" / "input_data" / "scrap_processes.xlsx"
 
 SUPPORTED_YEARS_OBS = range(2010, 2025)
 SUPPORTED_YEARS_SCENARIO = range(2025, 2051)

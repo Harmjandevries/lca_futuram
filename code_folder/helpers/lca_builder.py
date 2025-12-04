@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List
-from code_folder.helpers.constants import SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
+from code_folder.helpers.constants import SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
 import bw2data as bd
 import bw2calc as bc
 from code_folder.helpers.brightway_helpers import BrightwayHelpers
@@ -30,6 +30,7 @@ class LCABuilder:
         self.database = bd.Database(database_name)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
 
+        self.scrap_processes: List[dict] = []
         self.lcis: List[SingleLCI] = []
         self.lcia_results: List[SingleLCIAResult] = []
 
@@ -41,6 +42,8 @@ class LCABuilder:
                        location_selection=List[Location],
                        ):
         """Build LCIs for all combinations of the provided selections and write to DB."""
+        self.build_scrap_processes()
+
         for route in route_selection:
 
             for product in product_selection:
@@ -59,7 +62,7 @@ class LCABuilder:
 
         # Adds all the lci_dict together in a big dict
         big_dict = {k: v for lci in self.lcis for k, v in lci.lci_dict.items()}
-        self.database.write(big_dict)
+        self.database.write(big_dict) # add scrap processes here. 
 
     def build_lci(self, route:Route, product:Product, year: int, scenario:Scenario, location:Location):
         """Build a single LCI for a specific (route, product, year, scenario, location)."""
@@ -185,7 +188,7 @@ class LCABuilder:
         output_recovered_material_rows = lci_builder_df[
     (lci_builder_df["Flow Direction"] == "recovered") |
     (lci_builder_df["LCI Flow Type"] == "recovered")
-]
+    ]
         for _, output_reco_row in output_recovered_material_rows.iterrows():
             material_list = [m.strip() for m in output_reco_row["Materials"].split(',') if m.strip()]
             flows_list = [m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',') if m.strip()]
@@ -393,3 +396,34 @@ class LCABuilder:
         unit_conversion = _parse(row.get("Weight per unit", 1.0))
         recovery_efficiency = _parse(row.get("Recovery efficiency", 1.0))
         return recovery_efficiency / unit_conversion
+
+    def build_scrap_processes(self):
+        """
+        Manually added piece of code to create (scrap) processes that can be universally used by the other processes
+        """
+        for sheet_name in pd.ExcelFile(SCRAP_PROCESSES_FILE).sheet_names:
+            activity_id, activity_dict = BrightwayHelpers.build_base_process(
+            name=sheet_name,
+            database_name=self.database_name)
+            exchanges_list = pd.read_excel(
+                SCRAP_PROCESSES_FILE,
+                sheet_name=sheet_name,
+            ).fillna("")
+            for _, row in exchanges_list.iterrows():
+                external_exchange = BrightwayHelpers.build_external_exchange(
+                    database=ExternalDatabase(row['database'].upper()),
+                    ecoinvent=self.ecoinvent,
+                    biosphere=self.biosphere,
+                    process_name = row['activity name'],
+                    location=row['location'],
+                    amount=row['amount'],
+                    unit='unknown',
+                    flow_direction=row["flow direction"],
+                    categories=tuple(map(str.strip, row["categories"].split(", "))),
+                    reference_product=row['reference product'] if row['database'] == ExternalDatabase.ECOINVENT else None,
+                )
+                self._merge_exchange(
+                activity_dict[(self.database_name, activity_id)]["exchanges"],
+                external_exchange,
+            )
+        self.scrap_processes.append(activity_dict)

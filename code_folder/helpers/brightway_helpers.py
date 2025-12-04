@@ -74,6 +74,7 @@ class BrightwayHelpers:
             raise ValueError(f"Process not found: {name} @ {location}")
 
         if len(matches)>1:
+            print(f"Warning: Multiple processes found for {name} @ {location}. Using reference product ({reference_product}) to disambiguate.")
             filtered = [
                 act for act in matches
                 if str(act.get("reference product", "")).strip() == reference_product.strip()
