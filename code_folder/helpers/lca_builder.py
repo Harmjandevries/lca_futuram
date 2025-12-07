@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List
-from code_folder.helpers.constants import SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
+from code_folder.helpers.constants import SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
 import bw2data as bd
 import bw2calc as bc
 from code_folder.helpers.brightway_helpers import BrightwayHelpers
@@ -30,6 +30,12 @@ class LCABuilder:
         self.database = bd.Database(database_name)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
 
+        if SCRAP_DATABASE_NAME in bd.databases:
+            bd.Database(SCRAP_DATABASE_NAME).deregister()
+        self.scrap = bd.Database(SCRAP_DATABASE_NAME)
+
+
+        self.scrap_processes: List[dict] = []
         self.lcis: List[SingleLCI] = []
         self.lcia_results: List[SingleLCIAResult] = []
 
@@ -41,6 +47,9 @@ class LCABuilder:
                        location_selection=List[Location],
                        ):
         """Build LCIs for all combinations of the provided selections and write to DB."""
+        scrap_processes = self.build_scrap_processes()
+        self.scrap.write({k: v for d in scrap_processes for k, v in d.items()})
+
         for route in route_selection:
 
             for product in product_selection:
@@ -62,7 +71,7 @@ class LCABuilder:
         self.database.write(big_dict)
 
     def build_lci(self, route:Route, product:Product, year: int, scenario:Scenario, location:Location):
-        """Build a single LCI for a specific (route, product, year, scenario, location)."""
+        """Build a sifngle LCI for a specific (route, product, year, scenario, location)."""
         mfa_df, lci_builder_df = self._read_inputs(route=route, product=product, year=year, scenario=scenario)
         if lci_builder_df is None:
             return
@@ -185,7 +194,7 @@ class LCABuilder:
         output_recovered_material_rows = lci_builder_df[
     (lci_builder_df["Flow Direction"] == "recovered") |
     (lci_builder_df["LCI Flow Type"] == "recovered")
-]
+    ]
         for _, output_reco_row in output_recovered_material_rows.iterrows():
             material_list = [m.strip() for m in output_reco_row["Materials"].split(',') if m.strip()]
             flows_list = [m.strip() for m in output_reco_row["Stock/Flow IDs"].split(',') if m.strip()]
@@ -207,16 +216,20 @@ class LCABuilder:
             linked_process_database, linked_process_name = tuple(output_reco_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
 
+            reference_product = output_reco_row.get("LCI Flow Name", "") or None
+
             avoided_impact_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
                 ecoinvent=self.ecoinvent,
                 biosphere=self.biosphere,
+                scrap=self.scrap,
                 process_name=linked_process_name,
                 location=output_reco_row["Region"] if output_reco_row["Region"] else "RER",
                 amount=amount_per_unit,
                 flow_direction="output",
                 categories=tuple(map(str.strip, output_reco_row["Categories"].split(", "))),
                 unit=output_reco_row["Unit"],
+                reference_product=reference_product if linked_process_database == ExternalDatabase.ECOINVENT else None,
             )
             self._merge_exchange(
                 lci_dict[(self.database_name, avoided_impacts_activity_id)]["exchanges"],
@@ -251,16 +264,20 @@ class LCABuilder:
                 amount = external_row['Amount']
             linked_process_database, linked_process_name = tuple(external_row['Linked process'].split(':'))
             linked_process_database = ExternalDatabase(linked_process_database.upper())
+
+            reference_product = external_row.get("LCI Flow Name", "") or None
             external_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
                 ecoinvent=self.ecoinvent,
                 biosphere=self.biosphere,
+                scrap=self.scrap,
                 process_name = linked_process_name,
                 location=external_row["Region"] if external_row["Region"] else "RER",
                 amount=amount,
                 unit=external_row["Unit"],
                 flow_direction=external_row["Flow Direction"],
-                categories=tuple(map(str.strip, external_row["Categories"].split(", ")))
+                categories=tuple(map(str.strip, external_row["Categories"].split(", "))),
+                reference_product=reference_product if linked_process_database == ExternalDatabase.ECOINVENT else None,
             )
             self._merge_exchange(
                 lci_dict[(self.database_name, main_activity_id)]["exchanges"],
@@ -387,3 +404,39 @@ class LCABuilder:
         unit_conversion = _parse(row.get("Weight per unit", 1.0))
         recovery_efficiency = _parse(row.get("Recovery efficiency", 1.0))
         return recovery_efficiency / unit_conversion
+
+    def build_scrap_processes(self):
+        """
+        Manually added piece of code to create (scrap) processes that can be universally used by the other processes
+        """
+        scrap_processes = []
+        for sheet_name in pd.ExcelFile(SCRAP_PROCESSES_FILE).sheet_names:
+            activity_id, activity_dict = BrightwayHelpers.build_base_process(
+            name=sheet_name,
+            database_name=self.scrap.name,
+            is_waste=True
+            )
+            exchanges_list = pd.read_excel(
+                SCRAP_PROCESSES_FILE,
+                sheet_name=sheet_name,
+            ).fillna("")
+            for _, row in exchanges_list.iterrows():
+                external_exchange = BrightwayHelpers.build_external_exchange(
+                    database=ExternalDatabase(row['database'].upper()),
+                    ecoinvent=self.ecoinvent,
+                    biosphere=self.biosphere,
+                    scrap=self.scrap,
+                    process_name = row['activity name'],
+                    location=row['location'],
+                    amount=row['amount'],
+                    unit='unknown',
+                    flow_direction=row["flow direction"],
+                    categories=tuple(map(str.strip, row["categories"].split(", "))),
+                    reference_product=row['reference product'] if row['database'] == ExternalDatabase.ECOINVENT else None,
+                )
+                self._merge_exchange(
+                activity_dict[(self.scrap.name, activity_id)]["exchanges"],
+                external_exchange,
+            )
+            scrap_processes.append(activity_dict)
+        return scrap_processes

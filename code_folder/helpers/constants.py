@@ -8,6 +8,7 @@ PROJECT_NAME = "premise"
 ECOINVENT_NAME = "ecoinvent-3.11-cutoff"
 SUPERSTRUCTURE_NAME = "scenario_superstructure"
 BIOSPHERE_NAME = "biosphere3"
+SCRAP_DATABASE_NAME = "scrap"
 
 class Route(Enum):
     PYRO_HYDRO = "BATT_LIBToPyro1"
@@ -20,6 +21,7 @@ class Route(Enum):
     BATT_ZnAlkaliSorted = "BATT_ZnAlkaliSorted"
     BATT_EVInspectedReuse = "BATT_EVInspectedReuse"
     BATT_NiMHSorted = "BATT_NiMHSorted"
+    BATT_2RM_dismantlingToSmelter = "BATT_2RM_dismantlingToSmelter"
     WEEE = "WEEE"
 
 
@@ -34,6 +36,7 @@ class Product(Enum):
     battLiNMC811 = "battLiNMC811"
     battLiFP_subsub = "battLiFP_subsub"
     battLiNCA_subsub = "battLiNCA_subsub"
+    battPackXEV = "battPackXEV"	
     WEEE_Cat1 = "WEEE_Cat1"
     WEEE_Cat2 = "WEEE_Cat2"
     WEEE_Cat3 = "WEEE_Cat3"
@@ -53,6 +56,7 @@ class Product(Enum):
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_FOLDER = PROJECT_ROOT / "data"
+SCRAP_PROCESSES_FILE = PROJECT_ROOT / "data" / "input_data" / "scrap_processes.xlsx"
 
 SUPPORTED_YEARS_OBS = range(2010, 2025)
 SUPPORTED_YEARS_SCENARIO = range(2025, 2051)
@@ -66,6 +70,7 @@ BW_FORMAT_LCIS_DATA_FOLDER = DATA_FOLDER / "output_data/bw_format_lcis"
 class ExternalDatabase(Enum):
     ECOINVENT="ECOINVENT"
     BIOSPHERE="BIOSPHERE"
+    SCRAP="SCRAP"
 
 class Scenario(Enum):
     OBS="OBS"
@@ -89,7 +94,8 @@ route_lci_names = {
     Route.HYDRO: "Hydrometallurgical recycling of",
     Route.WEEE: "Dismantling and shredding of ",
     Route.DIRECT: "Direct recycling of ",
-    Route.ELV: "Dismantling and shredding of "
+    Route.ELV: "Dismantling and shredding of ",
+    Route.BATT_2RM_dismantlingToSmelter: "Dismantling and shredding of "
 }
 
 @dataclass
