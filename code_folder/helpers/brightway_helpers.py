@@ -1,9 +1,13 @@
 import uuid
+from collections import OrderedDict
 from typing import Optional
 from code_folder.helpers.constants import ExternalDatabase
 import bw2data as bd
 
 class BrightwayHelpers:
+    _ecoinvent_cache: OrderedDict = OrderedDict()
+    _biosphere_cache: OrderedDict = OrderedDict()
+
     @staticmethod
     def build_base_process(name: str, database_name: str, is_waste: Optional[bool] = False):
         """Create a minimal Brightway process with a production exchange.
@@ -73,6 +77,11 @@ class BrightwayHelpers:
     @staticmethod
     def find_external_db_key_by_name(name, database: bd.Database, location, reference_product: Optional[str] = None):
         """Find (database_name, code) for an ecoinvent activity by exact name/location and optional reference product."""
+        cache_key = (database.name, name.strip(), location.strip(), reference_product.strip() if reference_product else None)
+        if cache_key in BrightwayHelpers._ecoinvent_cache:
+            BrightwayHelpers._ecoinvent_cache.move_to_end(cache_key)
+            return BrightwayHelpers._ecoinvent_cache[cache_key]
+
         matches = [
             act for act in database
             if act["name"].strip() == name.strip() and act.get("location", "").strip() == location.strip()
@@ -98,7 +107,11 @@ class BrightwayHelpers:
 
         if len(matches) == 1:
             act = matches[0]
-            return (database.name, act["code"])
+            result = (database.name, act["code"])
+            BrightwayHelpers._ecoinvent_cache[cache_key] = result
+            if len(BrightwayHelpers._ecoinvent_cache) > 50:
+                BrightwayHelpers._ecoinvent_cache.popitem(last=False)
+            return result
 
         raise ValueError(
             f"Multiple processes found for {name} @ {location}. "
@@ -108,8 +121,17 @@ class BrightwayHelpers:
     @staticmethod
     def find_biosphere_key_by_name(name, biosphere: bd.Database, categories=("air", "urban air close to ground")):
         """Find (database_name, code) for a biosphere flow by exact name and categories."""
+        cache_key = (biosphere.name, name.strip(), tuple(categories))
+        if cache_key in BrightwayHelpers._biosphere_cache:
+            BrightwayHelpers._biosphere_cache.move_to_end(cache_key)
+            return BrightwayHelpers._biosphere_cache[cache_key]
+
         for flow in biosphere:
             if flow["name"].strip() == name.strip() and tuple(flow["categories"]) == categories:
                 # Use the actual database name for biosphere
-                return (biosphere.name, flow["code"])
+                result = (biosphere.name, flow["code"])
+                BrightwayHelpers._biosphere_cache[cache_key] = result
+                if len(BrightwayHelpers._biosphere_cache) > 50:
+                    BrightwayHelpers._biosphere_cache.popitem(last=False)
+                return result
         raise ValueError(f"Biosphere flow not found: {name} @ {categories}")
