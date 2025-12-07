@@ -8,6 +8,7 @@ PROJECT_NAME = "premise"
 ECOINVENT_NAME = "ecoinvent-3.11-cutoff"
 SUPERSTRUCTURE_NAME = "scenario_superstructure"
 BIOSPHERE_NAME = "biosphere3"
+SCRAP_DATABASE_NAME = "scrap"
 
 class Route(Enum):
     PYRO_HYDRO = "BATT_LIBToPyro1"
@@ -69,6 +70,7 @@ BW_FORMAT_LCIS_DATA_FOLDER = DATA_FOLDER / "output_data/bw_format_lcis"
 class ExternalDatabase(Enum):
     ECOINVENT="ECOINVENT"
     BIOSPHERE="BIOSPHERE"
+    SCRAP="SCRAP"
 
 class Scenario(Enum):
     OBS="OBS"

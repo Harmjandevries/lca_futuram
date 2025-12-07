@@ -34,6 +34,7 @@ class BrightwayHelpers:
         database: ExternalDatabase,
         biosphere: bd.Database,
         ecoinvent: bd.Database,
+        scrap: bd.Database,
         process_name: str,
         amount: float,
         unit: str,
@@ -45,9 +46,16 @@ class BrightwayHelpers:
         """Create an exchange to an external database (ecoinvent/biosphere) with correct sign/type."""
         # Database can be ecoinvent or biosphere
         if database == ExternalDatabase.ECOINVENT:
-            input = BrightwayHelpers.find_ecoinvent_key_by_name(
+            input = BrightwayHelpers.find_external_db_key_by_name(
                 name=process_name,
-                ecoinvent=ecoinvent,
+                database=ecoinvent,
+                location=location,
+                reference_product=reference_product,
+            )
+        if database == ExternalDatabase.SCRAP:
+            input = BrightwayHelpers.find_external_db_key_by_name(
+                name=process_name,
+                database=scrap,
                 location=location,
                 reference_product=reference_product,
             )
@@ -56,17 +64,17 @@ class BrightwayHelpers:
         return {
         "input": input,
         "name": process_name,
-        "amount": amount * (1 if database == ExternalDatabase.ECOINVENT else -1) * (1 if flow_direction == "input" else -1),
+        "amount": amount * (1 if database in [ExternalDatabase.ECOINVENT,ExternalDatabase.SCRAP] else -1) * (1 if flow_direction == "input" else -1),
         "unit": unit,
-        "type": "technosphere" if database == ExternalDatabase.ECOINVENT else "biosphere",
+        "type": "technosphere" if database in [ExternalDatabase.ECOINVENT,ExternalDatabase.SCRAP] else "biosphere",
         "location": location
     }
 
     @staticmethod
-    def find_ecoinvent_key_by_name(name, ecoinvent: bd.Database, location, reference_product: Optional[str] = None):
+    def find_external_db_key_by_name(name, database: bd.Database, location, reference_product: Optional[str] = None):
         """Find (database_name, code) for an ecoinvent activity by exact name/location and optional reference product."""
         matches = [
-            act for act in ecoinvent
+            act for act in database
             if act["name"].strip() == name.strip() and act.get("location", "").strip() == location.strip()
         ]
 
@@ -90,7 +98,7 @@ class BrightwayHelpers:
 
         if len(matches) == 1:
             act = matches[0]
-            return (ecoinvent.name, act["code"])
+            return (database.name, act["code"])
 
         raise ValueError(
             f"Multiple processes found for {name} @ {location}. "

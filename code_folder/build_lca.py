@@ -25,11 +25,11 @@ def main():
     # SCENARIO_SELECTION = [Scenario.REC]
     # LOCATION_SELECTION = [Location.EU27_4]
 
-    PRODUCT_SELECTION = []
-    ROUTE_SELECTION = []
-    YEAR_SELECTION = []
-    SCENARIO_SELECTION = []
-    LOCATION_SELECTION = []
+    PRODUCT_SELECTION = [Product.battPackXEV, Product.battLiNMC111]
+    ROUTE_SELECTION = [Route.BATT_2RM_dismantlingToSmelter, Route.HYDRO]
+    YEAR_SELECTION = [2030]
+    SCENARIO_SELECTION = [Scenario.CIR]
+    LOCATION_SELECTION = [Location.EU27_4]
 
     # If a previous version of the database exists, remove it completely
     if database_name in bd.databases:
