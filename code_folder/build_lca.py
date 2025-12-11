@@ -12,7 +12,7 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 
 import bw2data as bd
 from code_folder.helpers.lca_builder import LCABuilder
-from code_folder.helpers.constants import Product, Route, Scenario, Location, PROJECT_NAME
+from code_folder.helpers.constants import Product, Route, Scenario, Location, PROJECT_NAME, LCIA_METHODS
 
 
 def main():
@@ -31,9 +31,6 @@ def main():
     db = bd.Database(database_name)
 
 
-    lcia_method = ('CML v4.8 2016', 'climate change', 'global warming potential (GWP100)')
-
-
     lca_builder = LCABuilder(database_name=database_name)
     lca_builder.build_all_lcis(
         product_selection=PRODUCT_SELECTION,
@@ -46,7 +43,7 @@ def main():
     lca_builder.save_database_to_excel()
 
 
-    lca_builder.run_lcia(lcia_method=lcia_method)
+    lca_builder.run_lcia(lcia_methods=LCIA_METHODS)
     lca_builder.save_lcia_results()
 
 

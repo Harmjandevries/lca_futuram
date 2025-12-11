@@ -330,7 +330,7 @@ class LCABuilder:
                 ]["Value"].sum()
         return amount
 
-    def run_lcia(self, lcia_method):
+    def run_lcia(self, lcia_methods):
         """Compute LCIA for all built LCIs and store results in memory."""
         total_lcis = len(self.lcis)
         for index, lci in enumerate(self.lcis, start=1):
@@ -338,24 +338,27 @@ class LCABuilder:
                 f"Running LCIA {index}/{total_lcis} for {lci.main_activity_flow_name}",
                 flush=True,
             )
-            lcia_result = self.compute_lcia_for_lci(lcia_method=lcia_method, lci=lci)
+            lcia_result = self.compute_lcia_for_lci(lcia_methods=lcia_methods, lci=lci)
             self.lcia_results.append(lcia_result)
 
-    def compute_lcia_for_lci(self, lcia_method: tuple, lci: SingleLCI):
+    def compute_lcia_for_lci(self, lcia_methods: tuple, lci: SingleLCI):
         """Compute LCIA for a single LCI, returning a SingleLCIAResult."""
         functional_unit = {next((act for act in self.database if lci.main_activity_flow_name == act["name"].lower())): -1}
-        lca = bc.LCA(functional_unit, lcia_method)
-        lca.lci()
-        lca.lcia()
-        total_impact = lca.score
+        total_impacts = {}
+        avoided_impacts = {}
+        for lcia_method in lcia_methods:
+            lca = bc.LCA(functional_unit, lcia_method)
+            lca.lci()
+            lca.lcia()
+            total_impacts[lcia_method[1]] = lca.score
 
-        functional_unit_avoided_impact = {next((act for act in self.database if lci.avoided_impacts_flow_name == act["name"].lower())): -1}
-        lca = bc.LCA(functional_unit_avoided_impact, lcia_method)
-        lca.lci()
-        lca.lcia()
-        avoided_impact = lca.score
+            functional_unit_avoided_impact = {next((act for act in self.database if lci.avoided_impacts_flow_name == act["name"].lower())): -1}
+            lca = bc.LCA(functional_unit_avoided_impact, lcia_method)
+            lca.lci()
+            lca.lcia()
+            avoided_impacts[lcia_method[1]] = lca.score
 
-        return SingleLCIAResult(total_impact=total_impact, avoided_impact=avoided_impact, lci=lci)
+        return SingleLCIAResult(total_impacts=total_impacts, avoided_impacts=avoided_impacts, lci=lci)
     
     def save_lcis(self):
         """Persist built LCIs to a timestamped pickle file."""

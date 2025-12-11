@@ -3,12 +3,19 @@
 from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
+from typing import dict
 
 PROJECT_NAME = "premise"
 ECOINVENT_NAME = "ecoinvent-3.11-cutoff"
 SUPERSTRUCTURE_NAME = "scenario_superstructure"
 BIOSPHERE_NAME = "biosphere3"
 SCRAP_DATABASE_NAME = "scrap"
+SCENARIO_MAP  = {
+    # Adjust mappings as needed
+    "BAU": {"model": "image", "pathway": "SSP2-L"},            # or "SSP2-Base"
+    "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
+    "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
+}
 
 class Route(Enum):
     PYRO_HYDRO = "BATT_LIBToPyro1"
@@ -64,7 +71,9 @@ INPUT_DATA_FOLDER = DATA_FOLDER / "input_data"
 LOADABLE_LCI_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcis"
 LOADABLE_LCIA_RESULTS_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcia_results"
 BW_FORMAT_LCIS_DATA_FOLDER = DATA_FOLDER / "output_data/bw_format_lcis"
+LCIA_RESULTS_EXCEL_FOLDER = DATA_FOLDER / "output_data/lcia_results_excel"
 
+LCIA_METHODS = [('CML v4.8 2016', 'climate change', 'global warming potential (GWP100)')]
 
 
 class ExternalDatabase(Enum):
@@ -115,7 +124,7 @@ class SingleLCI:
 @dataclass
 class SingleLCIAResult:
     """Class that holds all information for an LCIA"""
-    total_impact: float # impact of 1kg of recycling
-    avoided_impact: float
+    total_impacts: Dict[str, float] # impact of 1kg of recycling
+    avoided_impactS: Dict[str, float]
     lci: SingleLCI
     # impact_per_element: dict

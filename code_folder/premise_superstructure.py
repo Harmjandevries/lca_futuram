@@ -2,15 +2,7 @@ import os
 from typing import Dict, List
 import bw2data as bw
 from premise import NewDatabase  # type: ignore
-from code_folder.helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME
-
-
-SCENARIO_MAP: Dict[str, Dict[str, str]] = {
-    # Adjust mappings as needed
-    "BAU": {"model": "image", "pathway": "SSP2-L"},            # or "SSP2-Base"
-    "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
-    "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
-}
+from code_folder.helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME, SCENARIO_MAP
 
 
 YEARS: List[int] = [2020, 2030, 2040, 2050]
@@ -65,7 +57,7 @@ def build_superstructure_db() -> None:
 
     # Write individual scenario databases
     ndb.write_db_to_brightway(name=scenario_db_names)
-    
+
     # Single superstructure database with scenario-difference file
     super_name = SUPERSTRUCTURE_NAME
     ndb.write_superstructure_db_to_brightway(name=super_name)
