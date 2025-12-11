@@ -1,6 +1,7 @@
+from collections import defaultdict
 import pandas as pd
-from typing import List
-from code_folder.helpers.constants import SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
+from typing import Dict, List
+from code_folder.helpers.constants import SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
 import bw2data as bd
 import bw2calc as bc
 from code_folder.helpers.brightway_helpers import BrightwayHelpers
@@ -18,7 +19,8 @@ class LCABuilder:
     """
     def __init__(self, database_name: str):
 
-        self.ecoinvent = bd.Database(SUPERSTRUCTURE_NAME)
+        self.default_ecoinvent = bd.Database(SUPERSTRUCTURE_NAME)
+        self.background_map: Dict[Scenario, Dict[int, str]] = self._build_background_map()
         self.database_name = database_name
         self.database = bd.Database(database_name)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
@@ -98,6 +100,7 @@ class LCABuilder:
             scenario=scenario,
         )
 
+        ecoinvent_db = self._get_background_database(scenario=scenario, year=year)
         self._add_recovered_materials(
             lci_dict=lci_dict,
             lci_builder_df=lci_builder_df,
@@ -105,6 +108,7 @@ class LCABuilder:
             product_list=product_list,
             mfa_df=mfa_df,
             input_amount=input_amount,
+            ecoinvent_db=ecoinvent_db,
         )
 
         self._add_external_exchanges(
@@ -114,13 +118,14 @@ class LCABuilder:
             product_list=product_list,
             mfa_df=mfa_df,
             input_amount=input_amount,
+            ecoinvent_db=ecoinvent_db,
         )
 
         return SingleLCI(
             main_activity_flow_name=main_activity_flow_name,
             avoided_impacts_flow_name=avoided_impacts_flow_name,
-            product=product, 
-            route=route, 
+            product=product,
+            route=route,
             scenario=scenario,
             year=year,
             location=location,
@@ -183,7 +188,7 @@ class LCABuilder:
         lci_dict.update(avoided_impacts_dict)
         return avoided_impacts_activity_id, avoided_impacts_flow_name
 
-    def _add_recovered_materials(self, lci_dict: dict, lci_builder_df: pd.DataFrame, avoided_impacts_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
+    def _add_recovered_materials(self, lci_dict: dict, lci_builder_df: pd.DataFrame, avoided_impacts_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float, ecoinvent_db: bd.Database) -> None:
         """Add recovered material exchanges to the avoided impacts activity."""
         output_recovered_material_rows = lci_builder_df[
     (lci_builder_df["Flow Direction"] == "recovered") |
@@ -214,7 +219,7 @@ class LCABuilder:
 
             avoided_impact_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
-                ecoinvent=self.ecoinvent,
+                ecoinvent=ecoinvent_db,
                 biosphere=self.biosphere,
                 scrap=self.scrap,
                 process_name=linked_process_name,
@@ -230,7 +235,7 @@ class LCABuilder:
                 avoided_impact_exchange,
             )
 
-    def _add_external_exchanges(self, lci_dict: dict, lci_builder_df: pd.DataFrame, main_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float) -> None:
+    def _add_external_exchanges(self, lci_dict: dict, lci_builder_df: pd.DataFrame, main_activity_id: str, product_list: list, mfa_df: pd.DataFrame, input_amount: float, ecoinvent_db: bd.Database) -> None:
         """Add external exchanges (ecoinvent/biosphere) to the main activity."""
         external_activity_rows = lci_builder_df[(lci_builder_df['Linked process']!='')&(lci_builder_df['Flow Direction']!="recovered")&(lci_builder_df['LCI Flow Type']!="recovered")]
         for _, external_row in external_activity_rows.iterrows():
@@ -262,7 +267,7 @@ class LCABuilder:
             reference_product = external_row.get("LCI Flow Name", "") or None
             external_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
-                ecoinvent=self.ecoinvent,
+                ecoinvent=ecoinvent_db,
                 biosphere=self.biosphere,
                 scrap=self.scrap,
                 process_name = linked_process_name,
@@ -422,7 +427,7 @@ class LCABuilder:
             for _, row in exchanges_list.iterrows():
                 external_exchange = BrightwayHelpers.build_external_exchange(
                     database=ExternalDatabase(row['database'].upper()),
-                    ecoinvent=self.ecoinvent,
+                    ecoinvent=self.default_ecoinvent,
                     biosphere=self.biosphere,
                     scrap=self.scrap,
                     process_name = row['activity name'],
@@ -439,3 +444,29 @@ class LCABuilder:
             )
             scrap_processes.append(activity_dict)
         return scrap_processes
+
+    def _build_background_map(self) -> Dict[Scenario, Dict[int, str]]:
+        """Collect available scenario databases keyed by scenario and year."""
+        mapping: Dict[Scenario, Dict[int, str]] = defaultdict(dict)
+        for db_name in bd.databases:
+            for scenario in [Scenario.BAU, Scenario.CIR, Scenario.REC]:
+                prefix = f"{scenario.value}_"
+                if db_name.startswith(prefix):
+                    try:
+                        year = int(db_name.split("_", 1)[1])
+                    except ValueError:
+                        continue
+                    mapping[scenario][year] = db_name
+        return mapping
+
+    def _get_background_database(self, scenario: Scenario, year: int) -> bd.Database:
+        """Return the scenario-specific background DB, falling back to the closest year or default."""
+        if scenario == Scenario.OBS:
+            return self.default_ecoinvent
+
+        years_to_db = self.background_map.get(scenario, {})
+        if not years_to_db:
+            return self.default_ecoinvent
+
+        closest_year = min(years_to_db, key=lambda y: abs(y - year))
+        return bd.Database(years_to_db[closest_year])
