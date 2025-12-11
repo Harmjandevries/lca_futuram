@@ -45,6 +45,7 @@ def main():
 
     lca_builder.run_lcia(lcia_methods=LCIA_METHODS)
     lca_builder.save_lcia_results()
+    lca_builder.export_lcia_results_to_excel(lcia_methods=LCIA_METHODS)
 
 
 if __name__ == "__main__":
