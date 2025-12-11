@@ -44,9 +44,11 @@ def build_superstructure_db() -> None:
     source_version = _derive_ecoinvent_version(ECOINVENT_NAME)
 
     scenarios: List[Dict[str, object]] = []
-    for _, spec in SCENARIO_MAP.items():
+    scenario_db_names: List[str] = []
+    for scenario_label, spec in SCENARIO_MAP.items():
         for year in YEARS:
             scenarios.append({"model": spec["model"], "pathway": spec["pathway"], "year": year})
+            scenario_db_names.append(f"{scenario_label}_{year}")
 
     ndb = NewDatabase(
         scenarios=scenarios,
@@ -61,6 +63,9 @@ def build_superstructure_db() -> None:
     # Update all sectors for a comprehensive superstructure
     ndb.update()
 
+    # Write individual scenario databases
+    ndb.write_db_to_brightway(name=scenario_db_names)
+    
     # Single superstructure database with scenario-difference file
     super_name = SUPERSTRUCTURE_NAME
     ndb.write_superstructure_db_to_brightway(name=super_name)

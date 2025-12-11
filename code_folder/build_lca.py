@@ -21,7 +21,7 @@ def main():
     database_name = "batt"
     PRODUCT_SELECTION = [Product.battPackXEV, Product.BattZn, Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb]
     ROUTE_SELECTION = [Route.BATT_2RM_dismantlingToSmelter, Route.BATT_ZnAlkaliSorted, Route.BATT_EVInspectedReuse, Route.BATT_LeadAcidSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
-    YEAR_SELECTION = [x for x in range(2010, 2051)]
+    YEAR_SELECTION = [2010, 2020, 2030, 2040, 2050]
     SCENARIO_SELECTION = [Scenario.OBS, Scenario.REC, Scenario.BAU, Scenario.CIR]
     LOCATION_SELECTION = [Location.EU27_4]
 

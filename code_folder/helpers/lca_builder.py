@@ -17,21 +17,12 @@ class LCABuilder:
     - Running LCIA and persisting results
     """
     def __init__(self, database_name: str):
-        # Setup BW databases
-        user_input = input("Select database (1: Ecoinvent, 2: Superstructure): ")
-        if user_input == '1':
-            ecoinvent_database_name = ECOINVENT_NAME
-        else:
-            ecoinvent_database_name = SUPERSTRUCTURE_NAME
 
-
-        self.ecoinvent = bd.Database(ecoinvent_database_name)
+        self.ecoinvent = bd.Database(SUPERSTRUCTURE_NAME)
         self.database_name = database_name
         self.database = bd.Database(database_name)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
-
         self.scrap = bd.Database(SCRAP_DATABASE_NAME)
-
 
         self.scrap_processes: List[dict] = []
         self.lcis: List[SingleLCI] = []
