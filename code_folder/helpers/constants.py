@@ -3,6 +3,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict, List
 
 PROJECT_NAME = "premise"
 ECOINVENT_NAME = "ecoinvent-3.11-cutoff"
@@ -77,6 +78,16 @@ class Scenario(Enum):
     BAU="BAU"
     REC="REC"
     CIR="CIR"
+
+
+# Scenario definitions for premise / superstructure builds
+SCENARIO_SPECS: Dict[Scenario, Dict[str, str]] = {
+    Scenario.BAU: {"model": "image", "pathway": "SSP2-L"},
+    Scenario.REC: {"model": "remind", "pathway": "SSP2-PkBudg1000"},
+    Scenario.CIR: {"model": "remind", "pathway": "SSP2-PkBudg650"},
+}
+
+SCENARIO_YEARS: List[int] = [2020, 2030, 2040, 2050]
 
 class Location(Enum):
     EU27_4="EU27+4"

@@ -1,6 +1,24 @@
 import pandas as pd
 from typing import List
-from code_folder.helpers.constants import SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
+from code_folder.helpers.constants import (
+    SCRAP_DATABASE_NAME,
+    SCRAP_PROCESSES_FILE,
+    SingleLCI,
+    SingleLCIAResult,
+    ExternalDatabase,
+    Location,
+    Scenario,
+    Route,
+    Product,
+    INPUT_DATA_FOLDER,
+    ECOINVENT_NAME,
+    BIOSPHERE_NAME,
+    route_lci_names,
+    SUPPORTED_YEARS_OBS,
+    SUPPORTED_YEARS_SCENARIO,
+    SUPERSTRUCTURE_NAME,
+    SCENARIO_SPECS,
+)
 import bw2data as bd
 import bw2calc as bc
 from code_folder.helpers.brightway_helpers import BrightwayHelpers
@@ -16,14 +34,16 @@ class LCABuilder:
     - Building Brightway processes and exchanges
     - Running LCIA and persisting results
     """
-    def __init__(self, database_name: str):
-        # Setup BW databases
-        user_input = input("Select database (1: Ecoinvent, 2: Superstructure): ")
-        if user_input == '1':
-            ecoinvent_database_name = ECOINVENT_NAME
-        else:
-            ecoinvent_database_name = SUPERSTRUCTURE_NAME
+    def __init__(self, database_name: str, prefer_superstructure: bool = True):
+        """Setup BW databases and optionally prefer the superstructure background."""
 
+        if prefer_superstructure and SUPERSTRUCTURE_NAME in bd.databases:
+            ecoinvent_database_name = SUPERSTRUCTURE_NAME
+        else:
+            ecoinvent_database_name = ECOINVENT_NAME
+
+        self.using_superstructure = ecoinvent_database_name == SUPERSTRUCTURE_NAME
+        self.superstructure_parameters = self._load_superstructure_parameters() if self.using_superstructure else None
 
         self.ecoinvent = bd.Database(ecoinvent_database_name)
         self.database_name = database_name
@@ -339,6 +359,7 @@ class LCABuilder:
     def run_lcia(self, lcia_method):
         """Compute LCIA for all built LCIs and store results in memory."""
         for lci in self.lcis:
+            self._activate_superstructure_background(lci)
             lcia_result = self.compute_lcia_for_lci(lcia_method=lcia_method, lci=lci)
             self.lcia_results.append(lcia_result)
 
@@ -388,6 +409,51 @@ class LCABuilder:
                 exchange["amount"] += new_exchange["amount"]
                 return
         exchanges.append(new_exchange)
+
+    def _load_superstructure_parameters(self):
+        """Return the scenario parameter group if available."""
+        try:
+            return bd.parameters["scenario"]
+        except Exception:
+            # Superstructure parameters not available; fall back silently
+            return None
+
+    def _activate_superstructure_background(self, lci: SingleLCI) -> None:
+        """Ensure the correct superstructure scenario is active for the given LCI."""
+        if not self.superstructure_parameters:
+            return
+
+        scenario_spec = SCENARIO_SPECS.get(lci.scenario)
+        if not scenario_spec:
+            return
+
+        scenario_key = f"{scenario_spec['model']}-{scenario_spec['pathway']}-{lci.year}"
+        scenario_params = self.superstructure_parameters
+
+        if scenario_key not in scenario_params:
+            available = ", ".join(sorted(scenario_params.keys()))
+            raise ValueError(
+                f"Scenario '{scenario_key}' not found in superstructure parameters. "
+                f"Available: {available}"
+            )
+
+        for name, param in scenario_params.items():
+            # Parameter objects expose 'amount'; stored dicts use ['amount']
+            amount_value = 1.0 if name == scenario_key else 0.0
+            try:
+                param["amount"] = amount_value
+            except Exception:
+                try:
+                    param.amount = amount_value
+                except Exception:
+                    scenario_params[name] = amount_value
+
+        bd.parameters["scenario"] = scenario_params
+        try:
+            bd.parameters.flush()
+        except Exception:
+            # If flush is unavailable, continue; Brightway will use updated in-memory values
+            pass
 
     @staticmethod
     def _get_recovery_multiplier(row: pd.Series) -> float:
