@@ -30,8 +30,6 @@ class LCABuilder:
         self.database = bd.Database(database_name)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
 
-        if SCRAP_DATABASE_NAME in bd.databases:
-            bd.Database(SCRAP_DATABASE_NAME).deregister()
         self.scrap = bd.Database(SCRAP_DATABASE_NAME)
 
 
@@ -47,7 +45,12 @@ class LCABuilder:
                        location_selection=List[Location],
                        ):
         """Build LCIs for all combinations of the provided selections and write to DB."""
+        if SCRAP_DATABASE_NAME in bd.databases:
+            bd.Database(SCRAP_DATABASE_NAME).deregister()
+        self.scrap = bd.Database(SCRAP_DATABASE_NAME)
+
         scrap_processes = self.build_scrap_processes()
+        
         self.scrap.write({k: v for d in scrap_processes for k, v in d.items()})
 
         for route in route_selection:
@@ -338,7 +341,12 @@ class LCABuilder:
 
     def run_lcia(self, lcia_method):
         """Compute LCIA for all built LCIs and store results in memory."""
-        for lci in self.lcis:
+        total_lcis = len(self.lcis)
+        for index, lci in enumerate(self.lcis, start=1):
+            print(
+                f"Running LCIA {index}/{total_lcis} for {lci.main_activity_flow_name}",
+                flush=True,
+            )
             lcia_result = self.compute_lcia_for_lci(lcia_method=lcia_method, lci=lci)
             self.lcia_results.append(lcia_result)
 

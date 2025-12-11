@@ -8,8 +8,8 @@ from code_folder.helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTR
 SCENARIO_MAP: Dict[str, Dict[str, str]] = {
     # Adjust mappings as needed
     "BAU": {"model": "image", "pathway": "SSP2-L"},            # or "SSP2-Base"
-    # "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
-    # "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
+    "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
+    "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
 }
 
 
@@ -44,7 +44,7 @@ def build_superstructure_db() -> None:
     source_version = _derive_ecoinvent_version(ECOINVENT_NAME)
 
     scenarios: List[Dict[str, object]] = []
-    for scen_key, spec in SCENARIO_MAP.items():
+    for _, spec in SCENARIO_MAP.items():
         for year in YEARS:
             scenarios.append({"model": spec["model"], "pathway": spec["pathway"], "year": year})
 

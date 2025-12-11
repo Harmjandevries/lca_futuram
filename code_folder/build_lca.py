@@ -19,16 +19,10 @@ def main():
     bd.projects.set_current(PROJECT_NAME)
 
     database_name = "batt"
-    # PRODUCT_SELECTION = [Product.battPackXEV, Product.BattZn, Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb]
-    # ROUTE_SELECTION = [Route.BATT_2RM_dismantlingToSmelter, Route.BATT_ZnAlkaliSorted, Route.BATT_EVInspectedReuse, Route.BATT_LeadAcidSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
-    # YEAR_SELECTION = [2040]
-    # SCENARIO_SELECTION = [Scenario.REC]
-    # LOCATION_SELECTION = [Location.EU27_4]
-
-    PRODUCT_SELECTION = [Product.battPackXEV, Product.battLiNMC111]
-    ROUTE_SELECTION = [Route.BATT_2RM_dismantlingToSmelter, Route.HYDRO]
-    YEAR_SELECTION = [2030]
-    SCENARIO_SELECTION = [Scenario.CIR]
+    PRODUCT_SELECTION = [Product.battPackXEV, Product.BattZn, Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb]
+    ROUTE_SELECTION = [Route.BATT_2RM_dismantlingToSmelter, Route.BATT_ZnAlkaliSorted, Route.BATT_EVInspectedReuse, Route.BATT_LeadAcidSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
+    YEAR_SELECTION = [x for x in range(2010, 2051)]
+    SCENARIO_SELECTION = [Scenario.OBS, Scenario.REC, Scenario.BAU, Scenario.CIR]
     LOCATION_SELECTION = [Location.EU27_4]
 
     # If a previous version of the database exists, remove it completely
