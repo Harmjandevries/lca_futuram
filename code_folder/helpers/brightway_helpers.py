@@ -1,7 +1,12 @@
 import uuid
 from collections import OrderedDict
 from typing import Optional
-from code_folder.helpers.constants import ExternalDatabase, Scenario, SCENARIO_DATABASE_YEARS
+from code_folder.helpers.constants import (
+    ExternalDatabase,
+    Scenario,
+    SCENARIO_DATABASE_YEARS,
+    SCRAP_DATABASE_NAME,
+)
 import bw2data as bd
 
 class BrightwayHelpers:
@@ -109,7 +114,7 @@ class BrightwayHelpers:
             act = matches[0]
             result = (database.name, act["code"])
             BrightwayHelpers._ecoinvent_cache[cache_key] = result
-            if len(BrightwayHelpers._ecoinvent_cache) > 50:
+            if len(BrightwayHelpers._ecoinvent_cache) > 150:
                 BrightwayHelpers._ecoinvent_cache.popitem(last=False)
             return result
 
@@ -151,3 +156,12 @@ class BrightwayHelpers:
         scenario_name = Scenario.BAU.value if scenario == Scenario.OBS else scenario.value
         closest_year = min(available_years, key=lambda candidate: (abs(candidate - year), candidate))
         return f"{scenario_name}_{closest_year}"
+
+    @staticmethod
+    def resolve_scrap_db_name(
+        scenario: Scenario,
+        year: int,
+    ) -> str:
+        """Return the scrap DB name for a scenario/year combo."""
+        scenario_name = Scenario.BAU.value if scenario == Scenario.OBS else scenario.value
+        return f"{SCRAP_DATABASE_NAME}_{scenario_name}_{year}"

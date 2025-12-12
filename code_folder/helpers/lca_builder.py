@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List
-from code_folder.helpers.constants import SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
+from code_folder.helpers.constants import SCENARIO_DATABASE_YEARS, SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
 import bw2data as bd
 import bw2calc as bc
 from code_folder.helpers.brightway_helpers import BrightwayHelpers
@@ -22,7 +22,8 @@ class LCABuilder:
         self.database_name = database_name
         self.database = bd.Database(database_name)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
-        self.scrap = bd.Database(SCRAP_DATABASE_NAME)
+        self.scrap = None
+        self.built_scrap_dbs = set()
 
         self.scrap_processes: List[dict] = []
         self.lcis: List[SingleLCI] = []
@@ -37,14 +38,6 @@ class LCABuilder:
                        add_scrap: bool
                        ):
         """Build LCIs for all combinations of the provided selections and write to DB."""
-        if add_scrap:
-            if SCRAP_DATABASE_NAME in bd.databases:
-                bd.Database(SCRAP_DATABASE_NAME).deregister()
-            self.scrap = bd.Database(SCRAP_DATABASE_NAME)
-            scrap_processes = self.build_scrap_processes()
-        
-            self.scrap.write({k: v for d in scrap_processes for k, v in d.items()})
-
         for year in year_selection:
             for scenario in scenario_selection:
                 # Filter scenarios for relevant years
@@ -54,9 +47,26 @@ class LCABuilder:
                 resolved_ecoinvent_db = BrightwayHelpers.resolve_scenario_db_name(
                             scenario=scenario,
                             year=year,
-                            available_years=self._scenario_db_years,
+                            available_years=SCENARIO_DATABASE_YEARS
                         )
                 self.background_db = bd.Database(resolved_ecoinvent_db)
+                scrap_db_name = BrightwayHelpers.resolve_scrap_db_name(
+                    scenario=scenario,
+                    year=year,
+                )
+                if add_scrap and scrap_db_name not in self.built_scrap_dbs:
+                    if scrap_db_name in bd.databases:
+                        bd.Database(scrap_db_name).deregister()
+                    self.scrap = bd.Database(scrap_db_name)
+                    scrap_processes = self.build_scrap_processes(
+                        scenario=scenario,
+                        year=year,
+                        scrap_db_name=scrap_db_name,
+                    )
+                    self.scrap.write({k: v for d in scrap_processes for k, v in d.items()})
+                    self.built_scrap_dbs.add(scrap_db_name)
+                else:
+                    self.scrap = bd.Database(scrap_db_name)
 
                 for route in route_selection:
                     for product in product_selection:
