@@ -1,7 +1,7 @@
 import uuid
 from collections import OrderedDict
 from typing import Optional
-from code_folder.helpers.constants import ExternalDatabase
+from code_folder.helpers.constants import ExternalDatabase, Scenario, SCENARIO_DATABASE_YEARS
 import bw2data as bd
 
 class BrightwayHelpers:
@@ -135,3 +135,19 @@ class BrightwayHelpers:
                     BrightwayHelpers._biosphere_cache.popitem(last=False)
                 return result
         raise ValueError(f"Biosphere flow not found: {name} @ {categories}")
+
+    def resolve_scenario_db_name(
+    scenario: Scenario,
+    year: int,
+    available_years = SCENARIO_DATABASE_YEARS,
+) -> str:
+        """Map a scenario/year to the closest available scenario database name.
+
+        Scenario OBS is mapped to the BAU series. The year is rounded to the
+        nearest value in ``available_years`` (ties resolved toward the earlier
+        year).
+        """
+
+        scenario_name = Scenario.BAU.value if scenario == Scenario.OBS else scenario.value
+        closest_year = min(available_years, key=lambda candidate: (abs(candidate - year), candidate))
+        return f"{scenario_name}_{closest_year}"

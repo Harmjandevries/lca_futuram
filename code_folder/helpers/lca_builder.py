@@ -18,7 +18,7 @@ class LCABuilder:
     """
     def __init__(self, database_name: str):
 
-        self.ecoinvent = bd.Database(SUPERSTRUCTURE_NAME)
+        self.background_db = bd.Database(SUPERSTRUCTURE_NAME)
         self.database_name = database_name
         self.database = bd.Database(database_name)
         self.biosphere = bd.Database(BIOSPHERE_NAME)
@@ -31,28 +31,35 @@ class LCABuilder:
     def build_all_lcis(self,
                        route_selection:List[Route],
                        product_selection: List[Product],
-                       year_selection=List[int],
-                       scenario_selection=List[Scenario],
-                       location_selection=List[Location],
+                       year_selection: List[int],
+                       scenario_selection: List[Scenario],
+                       location_selection: List[Location],
+                       add_scrap: bool
                        ):
         """Build LCIs for all combinations of the provided selections and write to DB."""
-        if SCRAP_DATABASE_NAME in bd.databases:
-            bd.Database(SCRAP_DATABASE_NAME).deregister()
-        self.scrap = bd.Database(SCRAP_DATABASE_NAME)
-
-        scrap_processes = self.build_scrap_processes()
+        if add_scrap:
+            if SCRAP_DATABASE_NAME in bd.databases:
+                bd.Database(SCRAP_DATABASE_NAME).deregister()
+            self.scrap = bd.Database(SCRAP_DATABASE_NAME)
+            scrap_processes = self.build_scrap_processes()
         
-        self.scrap.write({k: v for d in scrap_processes for k, v in d.items()})
+            self.scrap.write({k: v for d in scrap_processes for k, v in d.items()})
 
-        for route in route_selection:
+        for year in year_selection:
+            for scenario in scenario_selection:
+                # Filter scenarios for relevant years
+                if (scenario == Scenario.OBS and year not in SUPPORTED_YEARS_OBS) or \
+                (scenario in [Scenario.BAU, Scenario.CIR, Scenario.REC] and year not in SUPPORTED_YEARS_SCENARIO):
+                    continue
+                resolved_ecoinvent_db = BrightwayHelpers.resolve_scenario_db_name(
+                            scenario=scenario,
+                            year=year,
+                            available_years=self._scenario_db_years,
+                        )
+                self.background_db = bd.Database(resolved_ecoinvent_db)
 
-            for product in product_selection:
-                for year in year_selection:
-                    for scenario in scenario_selection:
-                        # Filter scenarios for relevant years
-                        if (scenario == Scenario.OBS and year not in SUPPORTED_YEARS_OBS) or \
-                        (scenario in [Scenario.BAU, Scenario.CIR, Scenario.REC] and year not in SUPPORTED_YEARS_SCENARIO):
-                            continue
+                for route in route_selection:
+                    for product in product_selection:
                         for location in location_selection:
                             lci = self.build_lci(route=route, product=product, year=year, scenario=scenario, location=location)
                             if lci:
@@ -214,7 +221,7 @@ class LCABuilder:
 
             avoided_impact_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
-                ecoinvent=self.ecoinvent,
+                ecoinvent=self.background_db,
                 biosphere=self.biosphere,
                 scrap=self.scrap,
                 process_name=linked_process_name,
@@ -262,7 +269,7 @@ class LCABuilder:
             reference_product = external_row.get("LCI Flow Name", "") or None
             external_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
-                ecoinvent=self.ecoinvent,
+                ecoinvent=self.background_db,
                 biosphere=self.biosphere,
                 scrap=self.scrap,
                 process_name = linked_process_name,
@@ -429,7 +436,7 @@ class LCABuilder:
             for _, row in exchanges_list.iterrows():
                 external_exchange = BrightwayHelpers.build_external_exchange(
                     database=ExternalDatabase(row['database'].upper()),
-                    ecoinvent=self.ecoinvent,
+                    ecoinvent=self.background_db,
                     biosphere=self.biosphere,
                     scrap=self.scrap,
                     process_name = row['activity name'],

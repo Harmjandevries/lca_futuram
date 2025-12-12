@@ -16,6 +16,7 @@ SCENARIO_MAP  = {
     "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
     "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
 }
+SCENARIO_DATABASE_YEARS = [2020, 2030, 2040, 2050]
 
 class Route(Enum):
     PYRO_HYDRO = "BATT_LIBToPyro1"
