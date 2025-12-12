@@ -382,6 +382,10 @@ class LCABuilder:
         """Load the latest saved LCIA results from disk into memory."""
         self.lcia_results = StorageHelper.load_latest_lcia_results()
 
+    def export_lcia_results_to_excel(self, lcia_methods):
+        """Export the in-memory LCIA results to an Excel workbook."""
+        StorageHelper.save_lcia_results_to_excel(self.lcia_results, lcia_methods)
+
     @staticmethod
     def _merge_exchange(exchanges: List[dict], new_exchange: dict) -> None:
         """Merge an exchange into a list, summing amounts for duplicate entries."""

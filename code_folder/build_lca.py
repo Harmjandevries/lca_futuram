@@ -19,7 +19,8 @@ def main():
     bd.projects.set_current(PROJECT_NAME)
 
     database_name = "batt"
-    PRODUCT_SELECTION = [Product.battPackXEV, Product.BattZn, Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb]
+    PRODUCT_SELECTION = [Product.battPackXEV, ]
+    # Product.BattZn, Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb]
     ROUTE_SELECTION = [Route.BATT_2RM_dismantlingToSmelter, Route.BATT_ZnAlkaliSorted, Route.BATT_EVInspectedReuse, Route.BATT_LeadAcidSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
     YEAR_SELECTION = [2010, 2020, 2030, 2040, 2050]
     SCENARIO_SELECTION = [Scenario.OBS, Scenario.REC, Scenario.BAU, Scenario.CIR]
@@ -45,6 +46,7 @@ def main():
 
     lca_builder.run_lcia(lcia_methods=LCIA_METHODS)
     lca_builder.save_lcia_results()
+    lca_builder.export_lcia_results_to_excel(lcia_methods=LCIA_METHODS)
 
 
 if __name__ == "__main__":

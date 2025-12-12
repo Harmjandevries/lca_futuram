@@ -3,7 +3,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
-from typing import dict
+from typing import Dict
 
 PROJECT_NAME = "premise"
 ECOINVENT_NAME = "ecoinvent-3.11-cutoff"
@@ -73,8 +73,24 @@ LOADABLE_LCIA_RESULTS_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcia_res
 BW_FORMAT_LCIS_DATA_FOLDER = DATA_FOLDER / "output_data/bw_format_lcis"
 LCIA_RESULTS_EXCEL_FOLDER = DATA_FOLDER / "output_data/lcia_results_excel"
 
-LCIA_METHODS = [('CML v4.8 2016', 'climate change', 'global warming potential (GWP100)')]
-
+LCIA_METHODS = [
+    ('EF v3.0', 'climate change', 'global warming potential (GWP100)'),
+    ('EF v3.0', 'ozone depletion', 'ozone depletion potential (ODP)'),
+    ('EF v3.0', 'human toxicity: carcinogenic', 'comparative toxic unit for human (CTUh)'),
+    ('EF v3.0', 'human toxicity: non-carcinogenic', 'comparative toxic unit for human (CTUh)'),
+    ('EF v3.0', 'particulate matter formation', 'impact on human health'),
+    ('EF v3.0', 'ionising radiation: human health', 'human exposure efficiency relative to u235'),
+    ('EF v3.0', 'photochemical oxidant formation: human health', 'tropospheric ozone concentration increase'),
+    ('EF v3.0', 'acidification', 'accumulated exceedance (AE)'),
+    ('EF v3.0', 'eutrophication: terrestrial', 'accumulated exceedance (AE)'),
+    ('EF v3.0', 'eutrophication: freshwater', 'fraction of nutrients reaching freshwater end compartment (P)'),
+    ('EF v3.0', 'eutrophication: marine', 'fraction of nutrients reaching marine end compartment (N)'),
+    ('EF v3.0', 'ecotoxicity: freshwater', 'comparative toxic unit for ecosystems (CTUe)'),
+    ('EF v3.0', 'land use', 'soil quality index'),
+    ('EF v3.0', 'water use', 'user deprivation potential (deprivation-weighted water consumption)'),
+    ('EF v3.0', 'energy resources: non-renewable', 'abiotic depletion potential (ADP): fossil fuels'),
+    ('EF v3.0', 'material resources: metals/minerals', 'abiotic depletion potential (ADP): elements (ultimate reserves)')
+]
 
 class ExternalDatabase(Enum):
     ECOINVENT="ECOINVENT"
@@ -125,6 +141,6 @@ class SingleLCI:
 class SingleLCIAResult:
     """Class that holds all information for an LCIA"""
     total_impacts: Dict[str, float] # impact of 1kg of recycling
-    avoided_impactS: Dict[str, float]
+    avoided_impacts: Dict[str, float]
     lci: SingleLCI
     # impact_per_element: dict
