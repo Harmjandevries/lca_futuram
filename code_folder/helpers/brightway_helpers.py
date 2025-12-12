@@ -144,7 +144,6 @@ class BrightwayHelpers:
     def resolve_scenario_db_name(
     scenario: Scenario,
     year: int,
-    available_years = SCENARIO_DATABASE_YEARS,
 ) -> str:
         """Map a scenario/year to the closest available scenario database name.
 
@@ -154,7 +153,7 @@ class BrightwayHelpers:
         """
 
         scenario_name = Scenario.BAU.value if scenario == Scenario.OBS else scenario.value
-        closest_year = min(available_years, key=lambda candidate: (abs(candidate - year), candidate))
+        closest_year = min(SCENARIO_DATABASE_YEARS, key=lambda candidate: (abs(candidate - year), candidate))
         return f"{scenario_name}_{closest_year}"
 
     @staticmethod
@@ -164,4 +163,5 @@ class BrightwayHelpers:
     ) -> str:
         """Return the scrap DB name for a scenario/year combo."""
         scenario_name = Scenario.BAU.value if scenario == Scenario.OBS else scenario.value
+        closest_year = min(SCENARIO_DATABASE_YEARS, key=lambda candidate: (abs(candidate - year), candidate))
         return f"{SCRAP_DATABASE_NAME}_{scenario_name}_{year}"

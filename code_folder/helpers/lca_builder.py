@@ -47,7 +47,6 @@ class LCABuilder:
                 resolved_ecoinvent_db = BrightwayHelpers.resolve_scenario_db_name(
                             scenario=scenario,
                             year=year,
-                            available_years=SCENARIO_DATABASE_YEARS
                         )
                 self.background_db = bd.Database(resolved_ecoinvent_db)
                 scrap_db_name = BrightwayHelpers.resolve_scrap_db_name(
@@ -58,11 +57,7 @@ class LCABuilder:
                     if scrap_db_name in bd.databases:
                         bd.Database(scrap_db_name).deregister()
                     self.scrap = bd.Database(scrap_db_name)
-                    scrap_processes = self.build_scrap_processes(
-                        scenario=scenario,
-                        year=year,
-                        scrap_db_name=scrap_db_name,
-                    )
+                    scrap_processes = self.build_scrap_processes()
                     self.scrap.write({k: v for d in scrap_processes for k, v in d.items()})
                     self.built_scrap_dbs.add(scrap_db_name)
                 else:
