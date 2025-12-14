@@ -18,9 +18,8 @@ from code_folder.helpers.constants import Product, Route, Scenario, Location, PR
 def main():
     bd.projects.set_current(PROJECT_NAME)
 
-    database_name = "batt2"
-    PRODUCT_SELECTION = [Product.battPackXEV]
-    # Product.BattZn, Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb]
+    database_name = "batt_deliverable"
+    PRODUCT_SELECTION = [Product.battPackXEV, Product.BattZn, Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb]
     ROUTE_SELECTION = [Route.BATT_2RM_dismantlingToSmelter, Route.BATT_ZnAlkaliSorted, Route.BATT_EVInspectedReuse, Route.BATT_LeadAcidSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
     YEAR_SELECTION = [2010, 2020, 2030, 2040, 2050]
     SCENARIO_SELECTION = [Scenario.OBS, Scenario.REC, Scenario.BAU, Scenario.CIR]
@@ -39,7 +38,7 @@ def main():
         year_selection=YEAR_SELECTION,
         scenario_selection=SCENARIO_SELECTION,
         location_selection=LOCATION_SELECTION,
-        add_scrap=True
+        add_scrap=False
     )
     lca_builder.save_lcis()
     lca_builder.save_database_to_excel()

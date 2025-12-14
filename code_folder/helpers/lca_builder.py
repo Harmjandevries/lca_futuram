@@ -353,22 +353,27 @@ class LCABuilder:
             lcia_result = self.compute_lcia_for_lci(lcia_methods=lcia_methods, lci=lci)
             self.lcia_results.append(lcia_result)
 
-    def compute_lcia_for_lci(self, lcia_methods: tuple, lci: SingleLCI):
-        """Compute LCIA for a single LCI, returning a SingleLCIAResult."""
-        functional_unit = {next((act for act in self.database if lci.main_activity_flow_name == act["name"].lower())): -1}
-        total_impacts = {}
-        avoided_impacts = {}
-        for lcia_method in lcia_methods:
-            lca = bc.LCA(functional_unit, lcia_method)
-            lca.lci()
-            lca.lcia()
-            total_impacts[lcia_method[1]] = lca.score
+    def compute_lcia_for_lci(self, lcia_methods, lci):
+        main_act = next(act for act in self.database if lci.main_activity_flow_name == act["name"].lower())
+        avoided_act = next(act for act in self.database if lci.avoided_impacts_flow_name == act["name"].lower())
 
-            functional_unit_avoided_impact = {next((act for act in self.database if lci.avoided_impacts_flow_name == act["name"].lower())): -1}
-            lca = bc.LCA(functional_unit_avoided_impact, lcia_method)
-            lca.lci()
+        total_impacts, avoided_impacts = {}, {}
+
+        lca = bc.LCA({main_act: -1}, lcia_methods[0])
+        lca.lci()
+        for method in lcia_methods:
+            if method != lca.method:
+                lca.switch_method(method)
             lca.lcia()
-            avoided_impacts[lcia_method[1]] = lca.score
+            total_impacts[method[1]] = lca.score
+
+        lca_avoided = bc.LCA({avoided_act: -1}, lcia_methods[0])
+        lca_avoided.lci()
+        for method in lcia_methods:
+            if method != lca_avoided.method:
+                lca_avoided.switch_method(method)
+            lca_avoided.lcia()
+            avoided_impacts[method[1]] = lca_avoided.score
 
         return SingleLCIAResult(total_impacts=total_impacts, avoided_impacts=avoided_impacts, lci=lci)
     
