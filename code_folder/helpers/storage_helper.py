@@ -109,24 +109,33 @@ class StorageHelper:
 
         method_labels = [method[1] for method in lcia_methods]
 
-        rows = []
-        for result in lcia_results:
-            metadata = {
-                "Scenario": result.lci.scenario.value,
-                "Year": result.lci.year,
-                "Location": result.lci.location.value,
-                "Product": result.lci.product.value,
-                "RecyclingRoute": result.lci.route.value,
-            }
+        def _build_rows(scale_impacts: bool = False):
+            rows = []
+            for result in lcia_results:
+                metadata = {
+                    "Scenario": result.lci.scenario.value,
+                    "Year": result.lci.year,
+                    "Location": result.lci.location.value,
+                    "Product": result.lci.product.value,
+                    "RecyclingRoute": result.lci.route.value,
+                }
 
-            for impact_type, impacts in (
-                ("normal", result.total_impacts),
-                ("avoided", result.avoided_impacts),
-            ):
-                row = {**metadata, "Impact_type": impact_type}
-                for label in method_labels:
-                    row[label] = impacts.get(label)
-                rows.append(row)
+                scale_factor = (
+                    result.lci.total_inflow_amount if scale_impacts else 1
+                )
+
+                for impact_type, impacts in (
+                    ("normal", result.total_impacts),
+                    ("avoided", result.avoided_impacts),
+                ):
+                    row = {**metadata, "Impact_type": impact_type}
+                    for label in method_labels:
+                        value = impacts.get(label)
+                        row[label] = (
+                            value * scale_factor if value is not None else None
+                        )
+                    rows.append(row)
+            return rows
 
         columns = [
             "Scenario",
@@ -137,9 +146,11 @@ class StorageHelper:
             "Impact_type",
             *method_labels,
         ]
-        df = pd.DataFrame(rows, columns=columns)
+        df = pd.DataFrame(_build_rows(scale_impacts=False), columns=columns)
+        df_total = pd.DataFrame(_build_rows(scale_impacts=True), columns=columns)
 
         with pd.ExcelWriter(file_path, engine="xlsxwriter") as writer:
             df.to_excel(writer, sheet_name="impact_per_kg", index=False)
+            df_total.to_excel(writer, sheet_name="total_impacts", index=False)
 
         print(f"✅ Saved LCIA results to Excel at {file_path}")
