@@ -18,12 +18,15 @@ from code_folder.helpers.constants import Product, Route, Scenario, Location, PR
 def main():
     bd.projects.set_current(PROJECT_NAME)
 
-    database_name = "batt_deliverable"
+    database_name = "batt_current_env"
     PRODUCT_SELECTION = [Product.battPackXEV, Product.BattZn, Product.battLiNMC111, Product.battLiCO_subsub, Product.battLiFP_subsub, Product.battLiNMC811,Product.battLiMO_subsub, Product.battLiNCA_subsub,Product.BattNiCd, Product.BattNiMH, Product.BattPb]
     ROUTE_SELECTION = [Route.BATT_2RM_dismantlingToSmelter, Route.BATT_ZnAlkaliSorted, Route.BATT_EVInspectedReuse, Route.BATT_LeadAcidSorted, Route.BATT_NiCdSorted, Route.BATT_NiMHSorted, Route.DIRECT, Route.PYRO_HYDRO, Route.HYDRO, Route.PYRO_HYDRO_PRETREATMENT]
-    YEAR_SELECTION = [2010, 2020, 2030, 2040, 2050]
-    SCENARIO_SELECTION = [Scenario.OBS, Scenario.REC, Scenario.BAU, Scenario.CIR]
+    YEAR_SELECTION = [2050]
+    SCENARIO_SELECTION = list(reversed([scenario for scenario in Scenario]))
     LOCATION_SELECTION = [Location.EU27_4]
+
+    # Toggle to reuse a single rm_output.csv for every route instead of per-route files
+    USE_SHARED_RM_OUTPUT = True
 
     # If a previous version of the database exists, remove it completely
     if database_name in bd.databases:
@@ -31,7 +34,10 @@ def main():
     db = bd.Database(database_name)
 
 
-    lca_builder = LCABuilder(database_name=database_name)
+    lca_builder = LCABuilder(
+        database_name=database_name,
+        use_shared_rm_output=USE_SHARED_RM_OUTPUT
+    )
     lca_builder.build_all_lcis(
         product_selection=PRODUCT_SELECTION,
         route_selection=ROUTE_SELECTION,

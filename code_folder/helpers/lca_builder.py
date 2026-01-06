@@ -1,6 +1,7 @@
 import pandas as pd
-from typing import List
-from code_folder.helpers.constants import SCENARIO_DATABASE_YEARS, SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
+from pathlib import Path
+from typing import List, Optional
+from code_folder.helpers.constants import SHARED_RM_OUTPUT_FILE, SCENARIO_DATABASE_YEARS, SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
 import bw2data as bd
 import bw2calc as bc
 from code_folder.helpers.brightway_helpers import BrightwayHelpers
@@ -16,7 +17,13 @@ class LCABuilder:
     - Building Brightway processes and exchanges
     - Running LCIA and persisting results
     """
-    def __init__(self, database_name: str):
+    def __init__(self, database_name: str, use_shared_rm_output: bool = False):
+
+        baseline_db_name = BrightwayHelpers.resolve_scenario_db_name(
+            scenario=Scenario.OBS,
+            year=2020,
+        )
+        self.baseline_db = bd.Database(baseline_db_name)
 
         self.background_db = bd.Database(SUPERSTRUCTURE_NAME)
         self.database_name = database_name
@@ -28,6 +35,7 @@ class LCABuilder:
         self.scrap_processes: List[dict] = []
         self.lcis: List[SingleLCI] = []
         self.lcia_results: List[SingleLCIAResult] = []
+        self.use_shared_rm_output = use_shared_rm_output
 
     def build_all_lcis(self,
                        route_selection:List[Route],
@@ -145,8 +153,9 @@ class LCABuilder:
         Returns (mfa_df_filtered, lci_builder_df) or (mfa_df_filtered, None) if sheet missing.
         """
         input_folder = INPUT_DATA_FOLDER / route.value
+        rm_output_path = SHARED_RM_OUTPUT_FILE if self.use_shared_rm_output else (input_folder / "rm_output.csv")
 
-        mfa_df = pd.read_csv(input_folder / "rm_output.csv").fillna("")
+        mfa_df = pd.read_csv(rm_output_path).fillna("")
         if product.value in pd.ExcelFile(input_folder / "lci_builder.xlsx").sheet_names:
             lci_builder_df = pd.read_excel(
                 input_folder / "lci_builder.xlsx",
@@ -226,7 +235,7 @@ class LCABuilder:
 
             avoided_impact_exchange = BrightwayHelpers.build_external_exchange(
                 database=linked_process_database,
-                ecoinvent=self.background_db,
+                ecoinvent=self.baseline_db,
                 biosphere=self.biosphere,
                 scrap=self.scrap,
                 process_name=linked_process_name,

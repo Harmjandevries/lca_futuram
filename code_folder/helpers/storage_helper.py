@@ -124,17 +124,12 @@ class StorageHelper:
                     result.lci.total_inflow_amount if scale_impacts else 1
                 )
 
-                for impact_type, impacts in (
-                    ("normal", result.total_impacts),
-                    ("avoided", result.avoided_impacts),
-                ):
-                    row = {**metadata, "Impact_type": impact_type}
-                    for label in method_labels:
-                        value = impacts.get(label)
-                        row[label] = (
-                            value * scale_factor if value is not None else None
-                        )
-                    rows.append(row)
+                row = {**metadata, "Functional_unit": "kg of waste recycled"}
+                for label in method_labels:
+                    total = result.total_impacts.get(label)
+                    avoided = result.avoided_impacts.get(label)
+                    row[label] = (total - avoided) * scale_factor
+                rows.append(row)
             return rows
 
         columns = [
@@ -143,7 +138,7 @@ class StorageHelper:
             "Location",
             "Product",
             "RecyclingRoute",
-            "Impact_type",
+            "Functional_unit",
             *method_labels,
         ]
         df = pd.DataFrame(_build_rows(scale_impacts=False), columns=columns)

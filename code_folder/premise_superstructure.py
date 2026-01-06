@@ -2,7 +2,7 @@ import os
 from typing import Dict, List
 import bw2data as bw
 from premise import NewDatabase  # type: ignore
-from code_folder.helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME, SCENARIO_MAP
+from code_folder.helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME
 
 
 YEARS: List[int] = [2020, 2030, 2040, 2050]
@@ -37,7 +37,14 @@ def build_superstructure_db() -> None:
 
     scenarios: List[Dict[str, object]] = []
     scenario_db_names: List[str] = []
-    for scenario_label, spec in SCENARIO_MAP.items():
+    scenarios_to_create = {
+    # Adjust mappings as needed
+    "BAU": {"model": "image", "pathway": "SSP2-L"},            # or "SSP2-Base"
+    "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
+    "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
+    
+}
+    for scenario_label, spec in scenarios_to_create.items():
         for year in YEARS:
             scenarios.append({"model": spec["model"], "pathway": spec["pathway"], "year": year})
             scenario_db_names.append(f"{scenario_label}_{year}")

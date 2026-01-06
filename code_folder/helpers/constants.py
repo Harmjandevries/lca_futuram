@@ -10,12 +10,6 @@ ECOINVENT_NAME = "ecoinvent-3.11-cutoff"
 SUPERSTRUCTURE_NAME = "scenario_superstructure"
 BIOSPHERE_NAME = "biosphere3"
 SCRAP_DATABASE_NAME = "scrap"
-SCENARIO_MAP  = {
-    # Adjust mappings as needed
-    "BAU": {"model": "image", "pathway": "SSP2-L"},            # or "SSP2-Base"
-    "REC": {"model": "remind", "pathway": "SSP2-PkBudg1000"},
-    "CIR": {"model": "remind", "pathway": "SSP2-PkBudg650"},
-}
 SCENARIO_DATABASE_YEARS = [2020, 2030, 2040, 2050]
 
 class Route(Enum):
@@ -50,7 +44,6 @@ class Product(Enum):
     WEEE_Cat3 = "WEEE_Cat3"
     WEEE_Cat4a = "WEEE_Cat4a"
     WEEE_Cat4b = "WEEE_Cat4b"
-    WEEE_Cat4c = "WEEE_Cat4c"
     WEEE_Cat5 = "WEEE_Cat5"
     WEEE_Cat6 = "WEEE_Cat6"
     elvBEV = "elvBEV"
@@ -69,6 +62,7 @@ SCRAP_PROCESSES_FILE = PROJECT_ROOT / "data" / "input_data" / "scrap_processes.x
 SUPPORTED_YEARS_OBS = range(2010, 2025)
 SUPPORTED_YEARS_SCENARIO = range(2025, 2051)
 INPUT_DATA_FOLDER = DATA_FOLDER / "input_data"
+SHARED_RM_OUTPUT_FILE = INPUT_DATA_FOLDER / "shared_rm_output.csv"
 LOADABLE_LCI_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcis"
 LOADABLE_LCIA_RESULTS_DATA_FOLDER = DATA_FOLDER / "output_data/loadable_lcia_results"
 BW_FORMAT_LCIS_DATA_FOLDER = DATA_FOLDER / "output_data/bw_format_lcis"
@@ -76,21 +70,21 @@ LCIA_RESULTS_EXCEL_FOLDER = DATA_FOLDER / "output_data/lcia_results_excel"
 
 LCIA_METHODS = [
     ('EF v3.0', 'climate change', 'global warming potential (GWP100)'),
-    ('EF v3.0', 'ozone depletion', 'ozone depletion potential (ODP)'),
-    ('EF v3.0', 'human toxicity: carcinogenic', 'comparative toxic unit for human (CTUh)'),
-    ('EF v3.0', 'human toxicity: non-carcinogenic', 'comparative toxic unit for human (CTUh)'),
-    ('EF v3.0', 'particulate matter formation', 'impact on human health'),
-    ('EF v3.0', 'ionising radiation: human health', 'human exposure efficiency relative to u235'),
-    ('EF v3.0', 'photochemical oxidant formation: human health', 'tropospheric ozone concentration increase'),
-    ('EF v3.0', 'acidification', 'accumulated exceedance (AE)'),
-    ('EF v3.0', 'eutrophication: terrestrial', 'accumulated exceedance (AE)'),
-    ('EF v3.0', 'eutrophication: freshwater', 'fraction of nutrients reaching freshwater end compartment (P)'),
-    ('EF v3.0', 'eutrophication: marine', 'fraction of nutrients reaching marine end compartment (N)'),
-    ('EF v3.0', 'ecotoxicity: freshwater', 'comparative toxic unit for ecosystems (CTUe)'),
-    ('EF v3.0', 'land use', 'soil quality index'),
-    ('EF v3.0', 'water use', 'user deprivation potential (deprivation-weighted water consumption)'),
-    ('EF v3.0', 'energy resources: non-renewable', 'abiotic depletion potential (ADP): fossil fuels'),
-    ('EF v3.0', 'material resources: metals/minerals', 'abiotic depletion potential (ADP): elements (ultimate reserves)')
+    # ('EF v3.0', 'ozone depletion', 'ozone depletion potential (ODP)'),
+    # ('EF v3.0', 'human toxicity: carcinogenic', 'comparative toxic unit for human (CTUh)'),
+    # ('EF v3.0', 'human toxicity: non-carcinogenic', 'comparative toxic unit for human (CTUh)'),
+    # ('EF v3.0', 'particulate matter formation', 'impact on human health'),
+    # ('EF v3.0', 'ionising radiation: human health', 'human exposure efficiency relative to u235'),
+    # ('EF v3.0', 'photochemical oxidant formation: human health', 'tropospheric ozone concentration increase'),
+    # ('EF v3.0', 'acidification', 'accumulated exceedance (AE)'),
+    # ('EF v3.0', 'eutrophication: terrestrial', 'accumulated exceedance (AE)'),
+    # ('EF v3.0', 'eutrophication: freshwater', 'fraction of nutrients reaching freshwater end compartment (P)'),
+    # ('EF v3.0', 'eutrophication: marine', 'fraction of nutrients reaching marine end compartment (N)'),
+    # ('EF v3.0', 'ecotoxicity: freshwater', 'comparative toxic unit for ecosystems (CTUe)'),
+    # ('EF v3.0', 'land use', 'soil quality index'),
+    # ('EF v3.0', 'water use', 'user deprivation potential (deprivation-weighted water consumption)'),
+    # ('EF v3.0', 'energy resources: non-renewable', 'abiotic depletion potential (ADP): fossil fuels'),
+    # ('EF v3.0', 'material resources: metals/minerals', 'abiotic depletion potential (ADP): elements (ultimate reserves)')
 ]
 
 class ExternalDatabase(Enum):
@@ -103,6 +97,54 @@ class Scenario(Enum):
     BAU="BAU"
     REC="REC"
     CIR="CIR"
+
+    # bau + 1 param
+    BAU_REC_COLL = "BAU_REC_COLL"
+    BAU_REC_RECYCLE = "BAU_REC_RECYCLE"
+    BAU_REC_BACKGROUND = "BAU_REC_BACKGROUND"
+    BAU_CIR_COLL = "BAU_CIR_COLL"
+    BAU_CIR_REUSE = "BAU_CIR_REUSE"
+    BAU_CIR_RECYCLE = "BAU_CIR_RECYCLE"
+    BAU_CIR_BACKGROUND = "BAU_CIR_BACKGROUND"
+    BAU_CIR_WASTE = "BAU_CIR_WASTE"
+
+    # rec/cir + 1 param
+    REC_MINUS_COLL = "REC_MINUS_COLL"
+    REC_MINUS_RECYCLE = "REC_MINUS_RECYCLE"
+    REC_MINUS_BACKGROUND = "REC_MINUS_BACKGROUND"
+    CIR_MINUS_COLL = "CIR_MINUS_COLL"
+    CIR_MINUS_REUSE = "CIR_MINUS_REUSE"
+    CIR_MINUS_RECYCLE = "CIR_MINUS_RECYCLE"
+    CIR_MINUS_BACKGROUND = "CIR_MINUS_BACKGROUND"
+    CIR_MINUS_WASTE = "CIR_MINUS_WASTE"
+
+
+SCENARIO_BACKGROUND_MAP = {
+    Scenario.OBS: "BAU",
+    Scenario.BAU: "BAU",
+    Scenario.REC: "REC",
+    Scenario.CIR: "CIR",
+
+    Scenario.BAU_REC_COLL: "BAU",
+    Scenario.BAU_REC_RECYCLE: "BAU",
+    Scenario.BAU_REC_BACKGROUND: "REC",
+
+    Scenario.BAU_CIR_COLL: "BAU",
+    Scenario.BAU_CIR_REUSE: "BAU",
+    Scenario.BAU_CIR_RECYCLE: "BAU",
+    Scenario.BAU_CIR_BACKGROUND: "CIR",
+    Scenario.BAU_CIR_WASTE: "BAU",
+
+    Scenario.REC_MINUS_COLL: "REC",
+    Scenario.REC_MINUS_RECYCLE: "REC",
+    Scenario.REC_MINUS_BACKGROUND: "BAU",
+
+    Scenario.CIR_MINUS_COLL: "CIR",
+    Scenario.CIR_MINUS_REUSE: "CIR",
+    Scenario.CIR_MINUS_RECYCLE: "CIR",
+    Scenario.CIR_MINUS_BACKGROUND: "BAU",
+    Scenario.CIR_MINUS_WASTE: "CIR"
+}
 
 class Location(Enum):
     EU27_4="EU27+4"

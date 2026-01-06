@@ -4,6 +4,7 @@ from typing import Optional
 from code_folder.helpers.constants import (
     ExternalDatabase,
     Scenario,
+    SCENARIO_BACKGROUND_MAP,
     SCENARIO_DATABASE_YEARS,
     SCRAP_DATABASE_NAME,
 )
@@ -151,8 +152,7 @@ class BrightwayHelpers:
         nearest value in ``available_years`` (ties resolved toward the earlier
         year).
         """
-
-        scenario_name = Scenario.BAU.value if scenario == Scenario.OBS else scenario.value
+        scenario_name = SCENARIO_BACKGROUND_MAP[scenario]
         closest_year = min(SCENARIO_DATABASE_YEARS, key=lambda candidate: (abs(candidate - year), candidate))
         return f"{scenario_name}_{closest_year}"
 
@@ -162,6 +162,6 @@ class BrightwayHelpers:
         year: int,
     ) -> str:
         """Return the scrap DB name for a scenario/year combo."""
-        scenario_name = Scenario.BAU.value if scenario == Scenario.OBS else scenario.value
+        scenario_name = SCENARIO_BACKGROUND_MAP[scenario]
         closest_year = min(SCENARIO_DATABASE_YEARS, key=lambda candidate: (abs(candidate - year), candidate))
-        return f"{SCRAP_DATABASE_NAME}_{scenario_name}_{year}"
+        return f"{SCRAP_DATABASE_NAME}_{scenario_name}_{closest_year}"
