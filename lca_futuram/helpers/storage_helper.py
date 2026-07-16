@@ -8,7 +8,7 @@ import bw2calc as bc
 import pandas as pd
 from bw2io.export.excel import write_lci_excel
 
-from code_folder.helpers.constants import (
+from lca_futuram.helpers.constants import (
     BW_FORMAT_LCIS_DATA_FOLDER,
     functional_unit_label,
     LCIA_RESULTS_EXCEL_FOLDER,

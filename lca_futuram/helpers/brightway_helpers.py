@@ -1,7 +1,7 @@
 import uuid
 from collections import OrderedDict
 from typing import Optional
-from code_folder.helpers.constants import (
+from lca_futuram.helpers.constants import (
     ExternalDatabase,
     Scenario,
     SCENARIO_BACKGROUND_MAP,

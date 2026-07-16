@@ -1,72 +1,159 @@
-# MFA+LCA integration using the FutuRaM recovery model
+# FutuRaM MFA-LCA integration
 
-This repository builds life cycle inventories (LCIs) and runs impact assessment using the FutuRaM-format MFA data as input, together with manually collected LCA data.
+This repository builds life cycle inventories (LCIs) and runs life cycle impact assessment (LCIA) from FutuRaM-format material flow analysis (MFA) outputs and manually prepared LCA mapping sheets.
+
+The repository contains the reusable Python code only. Input data, generated outputs, local Brightway databases, visualization code, and private Excel/CSV artifacts are intentionally excluded.
+
+## What is included
+
+- LCI construction from recovery model outputs.
+- Brightway process and exchange helpers.
+- LCIA execution helpers.
+- Storage/export helpers for generated LCIs and LCIA results.
+- Scenario, route, product, and method constants used by the model.
+
+## What is not included
+
+- FutuRaM recovery model output files.
+- `lci_builder.xlsx` input workbooks.
+- ecoinvent, biosphere, premise, PSILCA, or other licensed databases.
+- Generated CSV, Excel, pickle, or Brightway export outputs.
+- Visualization and one-off analysis scripts.
 
 ## Requirements
 
 - Python 3.10+
-- `brightway2` (`bw2data`, `bw2calc`)
 - `pandas`
+- Brightway packages used by your environment, including `bw2data`, `bw2calc`, and `bw2io`
+- Optional: `premise`, if using `lca_futuram/premise_superstructure.py`
 
-## Preparing input data
+Brightway and ecoinvent setup is environment-specific and is not handled by this repository. The required databases must already exist in your local Brightway project before building LCIs.
 
-Three steps are required for preparing the lca: defining parameters, creating an MFA file, and creating the LCA file.
+## Repository structure
 
-All data are read from the `data` directory in the project root. The folder structure is:
-
+```text
+lca_futuram/
+  helpers/
+    brightway_helpers.py
+    constants.py
+    lca_builder.py
+    storage_helper.py
+  premise_superstructure.py
+readme.md
+setup.py
+pyproject.toml
 ```
+
+## Expected private data layout
+
+Input data is expected under `data/input_data/` in the project root. This folder is ignored by Git.
+
+```text
 data/
-├─ input_data/
-│  ├─ <route>/
-│  │  ├─ rm_output.csv
-│  │  └─ lci_builder.xlsx
+  input_data/
+    shared_rm_output.csv
+    scrap_processes.xlsx
+    <route>/
+      rm_output.csv
+      lci_builder.xlsx
+  output_data/
+    loadable_lcis/
+    loadable_lcia_results/
+    bw_format_lcis/
+    lcia_results_excel/
 ```
 
-### MFA data input
-The MFA data is created in the FutuRaM format from the recovery model, see the recovery model github for information on how to obtain these files. The file _rm_output.csv_ is simply the output of the recovery model as-is. To make the code faster, you can pre-emptively make a selection of only the relevant flows you wish to analyse. Required columns are Year, Scenario, Stock/Flow ID, Layer 1-4 and Value.
+The route folder names must match the values in `Route` from `lca_futuram.helpers.constants`.
 
-### LCA data input
-lci_builder.xlsx defines how the Life Cycle Inventory will be constructed from the recovery model. Every row represents an LCI exchange. Exchanges can be read from the recovery model, or defined independently if the recovery model does not provide information (such as for electricity). There are 5 possible ways to define a row:
-1. The production exchange: This is the input of products to the recycling system and has 'LCI Flow Type' column set to 'production'. It is the input amount for the recovery model, which the code will read and scale to 1 for the LCI.
-2. The recovered materials: This is the set of materials or elements that are recovered by recycling and substituted with new materials. The the 'LCI Flow Type'  column is set to 'recovered'. The code will read the recovered amount for each year/scenario from the recovery model and scale the recovered output in the LCI accordingly.
-3. Technosphere exchanges: This has the 'LCI Flow Type' column set to ' technosphere'. These can be:
-   1. read from the recovery model. In this case the recovery model flow needs to be defined.
-   2. predefined per kg of input material, in this case the amount per kg of input is set in the 'Amount' column. 
-4. Biosphere exchanges: This has the 'LCI Flow Type' set to 'biosphere'. The amount is defined per kg of input material.
+## MFA input
 
-For all rows, either of the following is defined:
-- If the amount needs to be read from the recovery model, `Stock/Flow IDs`, `Materials` and `Layer` need to be defined.
-- If the amount is defined from external sources, `Amount` and `Scaled by flows` needs to be defined, and above columns are empty.
+The MFA input is normally the FutuRaM recovery model output. The model expects columns including:
 
-Columns:
-- `Stock/Flow IDs` – Stock/Flow ID to be read (for 1, 2, 3i)
-- `Materials` – Selection of materials to be read from the RM
-- `Layer` – Layer to read the materials from in the RM, for example 3 for materials, 4 for elements
-- `Linked process` – ecoinvent/biosphere process to link to this exchange (for 3/4). Put the name of the database in front of the semicolon and the exchange after.
-- `Categories` – category, for biosphere exchanges only
-- `Region` – ecoinvent/biosphere region, for 2-4 only 
-- `LCI Flow Name` – desired name for this flow in the LCI
-- `Flow Direction` – direction of the flow in the recycling system (e.g. input for the product waste, electricity, reagents, output for emissions, slag)
-- `LCI Flow Type` – see section above
-- `Amount` – amount per kg of input product, only defined if not present in recovery model (3ii, 4)
-- `Unit` – unit for the ecoinvent/biosphere exchange
-- `Scaled by flows` - for flows where we know the amount from an external source, we know the amount _per_ amount of a different flow. For example, we know the electricity use per amount of input material, or we know the amount of produced slag per nickel output. This column contains the Stock/Flow ID that the column needs to be scaled by.
-- `Recovery efficiency` - for recovered materials, defines how well recovered materials replace the market product. For example, if recovered nickel sulfate replaces new nickel sulfate at a 80% efficiency on the market, the recovery efficiency 0.8. Default value is 1.
+- `Year`
+- `Scenario`
+- `Stock/Flow ID`
+- `Layer 1`
+- `Layer 2`
+- `Layer 3`
+- `Layer 4`
+- `Value`
 
+The builder can read either a per-route `rm_output.csv` or a shared `data/input_data/shared_rm_output.csv`, depending on the `use_shared_rm_output` option.
 
-### Defining parameters
+## LCA builder workbook
 
-In the file _constants.py_ the following things need to be defined:
-- **PROJECT_NAME**: name of the brightway project
-- **DATABASE_NAME**: name of the brightway database
-- **Route**: defines all the possible recycling routes. Values need to match the Stock/Flow ID from the input data.
-- **Product**: defines all the possible products that are tracked through the recycling system. Matches with the 'Layer 1' values from the input data.
+Each route uses an `lci_builder.xlsx` workbook. Each product is represented by a sheet whose name matches a `Product` enum value.
 
+Important columns include:
 
-## Running the model
+- `Stock/Flow IDs`
+- `Materials`
+- `Layer`
+- `Linked process`
+- `Categories`
+- `Region`
+- `LCI Flow Name`
+- `Flow Direction`
+- `LCI Flow Type`
+- `Amount`
+- `Unit`
+- `Scaled by flows`
+- `Recovery efficiency`
 
-1. Import the required external databases (ecoinvent and biosphere) into a Brightway project.
-2. Define the constants and inputs file
-3. Run the build_all_lcis() method
+The main flow types are:
 
-4. Run the run_lcia() method
+- `production`: the waste/product input to the recycling system.
+- `recovered`: recovered materials that substitute background production.
+- `technosphere`: external process inputs or outputs.
+- `biosphere`: emissions and resource flows.
+
+Rows can either read amounts from the recovery model using stock/flow IDs and material filters, or use fixed amounts from the `Amount` column.
+
+## Basic usage
+
+```python
+import bw2data as bd
+
+from lca_futuram.helpers.constants import (
+    GWP_PREMISE_ONLY,
+    Location,
+    Product,
+    PROJECT_NAME,
+    Route,
+    Scenario,
+)
+from lca_futuram.helpers.lca_builder import LCABuilder
+
+bd.projects.set_current(PROJECT_NAME)
+
+builder = LCABuilder(database_name="my_lca_database")
+builder.build_all_lcis(
+    route_selection=[Route.PYRO_HYDRO],
+    product_selection=[Product.battLiNMC811],
+    year_selection=[2030],
+    scenario_selection=[Scenario.BAU],
+    location_selection=[Location.EU27_4],
+    add_scrap=False,
+)
+
+builder.run_lcia(GWP_PREMISE_ONLY)
+builder.export_lcia_results_to_excel(GWP_PREMISE_ONLY)
+```
+
+## Premise superstructure
+
+`lca_futuram/premise_superstructure.py` can create scenario databases and a superstructure database using premise. It requires:
+
+- a configured Brightway project
+- a valid source ecoinvent database
+- `PREMISE_ECOINVENT_KEY` set in the environment
+
+This step is optional and depends on your local database licenses and setup.
+
+## Configuration note
+
+Some environment-specific defaults, such as Brightway project names and database names, currently live in `lca_futuram.helpers.constants`. For a more reusable public package, the next improvement should be moving these values into an explicit configuration object while keeping the existing defaults for local use.
+
+## Git hygiene
+
+The `.gitignore` excludes private data, generated results, local setup files, and visualization/analysis artifacts. Do not commit raw input data, generated Excel outputs, or licensed database exports.

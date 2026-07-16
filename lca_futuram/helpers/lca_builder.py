@@ -1,11 +1,11 @@
 import pandas as pd
 from pathlib import Path
 from typing import List, Optional
-from code_folder.helpers.constants import SHARED_RM_OUTPUT_FILE, SCENARIO_DATABASE_YEARS, SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
+from lca_futuram.helpers.constants import SHARED_RM_OUTPUT_FILE, SCENARIO_DATABASE_YEARS, SCRAP_DATABASE_NAME, SCRAP_PROCESSES_FILE, SingleLCI, SingleLCIAResult, ExternalDatabase,  Location, Scenario, Route, Product, INPUT_DATA_FOLDER, ECOINVENT_NAME, BIOSPHERE_NAME, route_lci_names, SUPPORTED_YEARS_OBS, SUPPORTED_YEARS_SCENARIO, SUPERSTRUCTURE_NAME
 import bw2data as bd
 import bw2calc as bc
-from code_folder.helpers.brightway_helpers import BrightwayHelpers
-from code_folder.helpers.storage_helper import StorageHelper
+from lca_futuram.helpers.brightway_helpers import BrightwayHelpers
+from lca_futuram.helpers.storage_helper import StorageHelper
 
 
 class LCABuilder:

@@ -2,7 +2,7 @@ import os
 from typing import Dict, List
 import bw2data as bw
 from premise import NewDatabase  # type: ignore
-from code_folder.helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME
+from lca_futuram.helpers.constants import PROJECT_NAME, ECOINVENT_NAME, SUPERSTRUCTURE_NAME
 
 
 YEARS: List[int] = [2020, 2030, 2040, 2050]

@@ -53,6 +53,7 @@ export/
 !data/.gitkeep
 
 # Local Brightway/premise setup and generated diagnostics
+lca_futuram/premise_setup.py
 code_folder/premise_setup.py
 psilca/
 unlinked.log
@@ -69,5 +70,7 @@ plots/
 Thumbs.db
 
 # One-off local builder scripts
+lca_futuram/build_lca_batt_*.py
+lca_futuram/old buiders/
 code_folder/build_lca_batt_*.py
 code_folder/old buiders/
