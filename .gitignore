@@ -67,3 +67,7 @@ plots/
 # OS files
 .DS_Store
 Thumbs.db
+
+# One-off local builder scripts
+code_folder/build_lca_batt_*.py
+code_folder/old buiders/
