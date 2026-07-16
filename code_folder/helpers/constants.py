@@ -18,6 +18,7 @@ class Route(Enum):
     PYRO_HYDRO_PRETREATMENT = "BATT_LIBToPyrolysis4"
     HYDRO = "Batt_LIBToPyrolysis2"
     DIRECT = "BATT_LIBToDirectRecycling"
+    MECH_ONLY = "BATT_LIBToMechanical3"
     BATT_NiCdSorted = "BATT_NiCdSorted"
     BATT_LeadAcidSorted = "BATT_LeadAcidSorted"
     BATT_ZnAlkaliSorted = "BATT_ZnAlkaliSorted"
@@ -53,6 +54,7 @@ class Product(Enum):
     elvNG = "elvNG"
     elvOther = "elvOther" 
     elvPetrol = "elvPetrol"
+    elvPHEV = "elvPHEV"
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -87,6 +89,63 @@ LCIA_METHODS = [
     # ('EF v3.0', 'material resources: metals/minerals', 'abiotic depletion potential (ADP): elements (ultimate reserves)')
 ]
 
+GWP_PREMISE_ONLY = [
+    (
+        'IPCC 2021 (incl. biogenic CO2)',
+        'climate change: total (incl. biogenic CO2)',
+        'global warming potential (GWP100)'
+        ),
+]
+
+SUPPLEMENTARY_ALL_METHODS = [
+    (
+        'IPCC 2021 (incl. biogenic CO2)',
+        'climate change: total (incl. biogenic CO2)',
+        'global warming potential (GWP100)'
+        ),
+    ('EF v3.0', 'ozone depletion', 'ozone depletion potential (ODP)'),
+    ('EF v3.0', 'human toxicity: carcinogenic', 'comparative toxic unit for human (CTUh)'),
+    ('EF v3.0', 'human toxicity: non-carcinogenic', 'comparative toxic unit for human (CTUh)'),
+    ('EF v3.0', 'particulate matter formation', 'impact on human health'),
+    ('EF v3.0', 'ionising radiation: human health', 'human exposure efficiency relative to u235'),
+    ('EF v3.0', 'photochemical oxidant formation: human health', 'tropospheric ozone concentration increase'),
+    ('EF v3.0', 'acidification', 'accumulated exceedance (AE)'),
+    ('EF v3.0', 'eutrophication: terrestrial', 'accumulated exceedance (AE)'),
+    ('EF v3.0', 'eutrophication: freshwater', 'fraction of nutrients reaching freshwater end compartment (P)'),
+    ('EF v3.0', 'eutrophication: marine', 'fraction of nutrients reaching marine end compartment (N)'),
+    ('EF v3.0', 'ecotoxicity: freshwater', 'comparative toxic unit for ecosystems (CTUe)'),
+    ('EF v3.0', 'land use', 'soil quality index'),
+    ('EF v3.0', 'water use', 'user deprivation potential (deprivation-weighted water consumption)'),
+    ('EF v3.0', 'energy resources: non-renewable', 'abiotic depletion potential (ADP): fossil fuels'),
+    ('EF v3.0', 'material resources: metals/minerals', 'abiotic depletion potential (ADP): elements (ultimate reserves)')
+]
+
+TEMPLATE_METHODS = [
+            ('EF v3.0', 'climate change', 'global warming potential (GWP100)'),
+            ('EF v3.0', 'human toxicity: carcinogenic', 'comparative toxic unit for human (CTUh)'),
+            ('EF v3.0', 'water use', 'user deprivation potential (deprivation-weighted water consumption)'),
+            ('EF v3.0', 'energy resources: non-renewable', 'abiotic depletion potential (ADP): fossil fuels'),
+            ('EF v3.0', 'material resources: metals/minerals', 'abiotic depletion potential (ADP): elements (ultimate reserves)')]
+
+ALL_LCIA_METHODS =  [
+    ('EF v3.0', 'climate change', 'global warming potential (GWP100)'),
+    ('EF v3.0', 'ozone depletion', 'ozone depletion potential (ODP)'),
+    ('EF v3.0', 'human toxicity: carcinogenic', 'comparative toxic unit for human (CTUh)'),
+    ('EF v3.0', 'human toxicity: non-carcinogenic', 'comparative toxic unit for human (CTUh)'),
+    ('EF v3.0', 'particulate matter formation', 'impact on human health'),
+    ('EF v3.0', 'ionising radiation: human health', 'human exposure efficiency relative to u235'),
+    ('EF v3.0', 'photochemical oxidant formation: human health', 'tropospheric ozone concentration increase'),
+    ('EF v3.0', 'acidification', 'accumulated exceedance (AE)'),
+    ('EF v3.0', 'eutrophication: terrestrial', 'accumulated exceedance (AE)'),
+    ('EF v3.0', 'eutrophication: freshwater', 'fraction of nutrients reaching freshwater end compartment (P)'),
+    ('EF v3.0', 'eutrophication: marine', 'fraction of nutrients reaching marine end compartment (N)'),
+    ('EF v3.0', 'ecotoxicity: freshwater', 'comparative toxic unit for ecosystems (CTUe)'),
+    ('EF v3.0', 'land use', 'soil quality index'),
+    ('EF v3.0', 'water use', 'user deprivation potential (deprivation-weighted water consumption)'),
+    ('EF v3.0', 'energy resources: non-renewable', 'abiotic depletion potential (ADP): fossil fuels'),
+    ('EF v3.0', 'material resources: metals/minerals', 'abiotic depletion potential (ADP): elements (ultimate reserves)')
+]
+
 class ExternalDatabase(Enum):
     ECOINVENT="ECOINVENT"
     BIOSPHERE="BIOSPHERE"
@@ -102,21 +161,25 @@ class Scenario(Enum):
     BAU_REC_COLL = "BAU_REC_COLL"
     BAU_REC_RECYCLE = "BAU_REC_RECYCLE"
     BAU_REC_BACKGROUND = "BAU_REC_BACKGROUND"
+    BAU_REC_CAPACITY = "BAU_REC_CAPACITY"
     BAU_CIR_COLL = "BAU_CIR_COLL"
     BAU_CIR_REUSE = "BAU_CIR_REUSE"
     BAU_CIR_RECYCLE = "BAU_CIR_RECYCLE"
     BAU_CIR_BACKGROUND = "BAU_CIR_BACKGROUND"
     BAU_CIR_WASTE = "BAU_CIR_WASTE"
+    BAU_CIR_CAPACITY = "BAU_CIR_CAPACITY"
 
     # rec/cir + 1 param
     REC_MINUS_COLL = "REC_MINUS_COLL"
     REC_MINUS_RECYCLE = "REC_MINUS_RECYCLE"
     REC_MINUS_BACKGROUND = "REC_MINUS_BACKGROUND"
+    REC_MINUS_CAPACITY = "REC_MINUS_CAPACITY"
     CIR_MINUS_COLL = "CIR_MINUS_COLL"
     CIR_MINUS_REUSE = "CIR_MINUS_REUSE"
     CIR_MINUS_RECYCLE = "CIR_MINUS_RECYCLE"
     CIR_MINUS_BACKGROUND = "CIR_MINUS_BACKGROUND"
     CIR_MINUS_WASTE = "CIR_MINUS_WASTE"
+    CIR_MINUS_CAPACITY = "CIR_MINUS_CAPACITY"
 
 
 SCENARIO_BACKGROUND_MAP = {
@@ -127,6 +190,7 @@ SCENARIO_BACKGROUND_MAP = {
 
     Scenario.BAU_REC_COLL: "BAU",
     Scenario.BAU_REC_RECYCLE: "BAU",
+    Scenario.BAU_REC_CAPACITY: "BAU",
     Scenario.BAU_REC_BACKGROUND: "REC",
 
     Scenario.BAU_CIR_COLL: "BAU",
@@ -134,20 +198,56 @@ SCENARIO_BACKGROUND_MAP = {
     Scenario.BAU_CIR_RECYCLE: "BAU",
     Scenario.BAU_CIR_BACKGROUND: "CIR",
     Scenario.BAU_CIR_WASTE: "BAU",
+    Scenario.BAU_CIR_CAPACITY: "BAU",
 
     Scenario.REC_MINUS_COLL: "REC",
     Scenario.REC_MINUS_RECYCLE: "REC",
+    Scenario.REC_MINUS_CAPACITY: "REC",
     Scenario.REC_MINUS_BACKGROUND: "BAU",
 
     Scenario.CIR_MINUS_COLL: "CIR",
     Scenario.CIR_MINUS_REUSE: "CIR",
     Scenario.CIR_MINUS_RECYCLE: "CIR",
+    Scenario.CIR_MINUS_CAPACITY: "CIR",
     Scenario.CIR_MINUS_BACKGROUND: "BAU",
     Scenario.CIR_MINUS_WASTE: "CIR"
 }
 
 class Location(Enum):
     EU27_4="EU27+4"
+
+
+class InflowMassUnit(Enum):
+    KG = "kg"
+    TONNE = "tonne"
+
+
+ROUTE_INFLOW_MASS_UNIT = {
+    Route.ELV: InflowMassUnit.KG,
+}
+
+
+def get_inflow_mass_unit(route: Route) -> InflowMassUnit:
+    """Return mass unit used by rm_output inflow values for a route."""
+    return ROUTE_INFLOW_MASS_UNIT.get(route, InflowMassUnit.TONNE)
+
+
+def co2eq_to_megatonnes_factor(route: Route) -> float:
+    """Convert total CO2-eq from route base unit to Mt CO2-eq."""
+    return 1e-9 if get_inflow_mass_unit(route) == InflowMassUnit.KG else 1e-6
+
+
+def co2eq_to_kilotonnes_factor(route: Route) -> float:
+    """Convert total CO2-eq from route base unit to kt CO2-eq."""
+    return 1e-6 if get_inflow_mass_unit(route) == InflowMassUnit.KG else 1e-3
+
+
+def functional_unit_label(route: Route) -> str:
+    """Return functional unit text matching the route inflow base unit."""
+    unit = get_inflow_mass_unit(route)
+    if unit == InflowMassUnit.KG:
+        return "kg of waste recycled"
+    return "tonne of waste recycled"
 
 
 
@@ -162,6 +262,7 @@ route_lci_names = {
     Route.HYDRO: "Hydrometallurgical recycling of",
     Route.WEEE: "Dismantling and shredding of ",
     Route.DIRECT: "Direct recycling of ",
+    Route.MECH_ONLY: "Mechanical recycling and export of black mass for ",
     Route.ELV: "Dismantling and shredding of ",
     Route.BATT_2RM_dismantlingToSmelter: "Dismantling and shredding of "
 }
@@ -178,12 +279,15 @@ class SingleLCI:
     lci_dict: dict # lci for the impacts of the recycling process
     main_activity_flow_name: str # name of the recycled material inflow to the lci_dict
     avoided_impacts_flow_name: str # LCI name of the avoided impacts activity
-    total_inflow_amount: int #total amount of recycled material, (we need to multiply the impacts with this, to get total impact)
+    # Total inflow amount from rm_output in route base mass unit
+    # (ELV: kg, other routes: tonne).
+    total_inflow_amount: int
 
 @dataclass
 class SingleLCIAResult:
     """Class that holds all information for an LCIA"""
-    total_impacts: Dict[str, float] # impact of 1kg of recycling
+    # Impact per 1 unit of waste recycled (same base mass unit as route inflow).
+    total_impacts: Dict[str, float]
     avoided_impacts: Dict[str, float]
     lci: SingleLCI
     # impact_per_element: dict
